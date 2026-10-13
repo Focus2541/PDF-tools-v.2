@@ -1,0 +1,3108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เครื่องมือ PDF 2</title>
+<meta name="theme-color" content="#1E4F46">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เครื่องมือ PDF 2">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F3EC;
+  --panel:#FFFFFF;
+  --ink:#20302C;
+  --ink-soft:#5B6B64;
+  --line:#DDD7C6;
+  --teal:#2F6F63;
+  --teal-dark:#1E4F46;
+  --teal-tint:#E6EFEA;
+  --ochre:#AD7A26;
+  --ochre-tint:#F4E9D6;
+  --danger:#B0392F;
+  --danger-tint:#F6E4E1;
+  --radius:10px;
+  --font-head:'Kanit',system-ui,sans-serif;
+  --font-body:'Sarabun','Noto Sans Thai','Leelawadee UI',Tahoma,system-ui,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+#app{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{
+  padding:22px 20px 16px;
+  border-bottom:1px solid var(--line);
+  background:var(--paper);
+  position:sticky;top:0;z-index:5;
+}
+.topbar-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.brand{font-family:var(--font-head);font-weight:700;font-size:20px;letter-spacing:.2px;color:var(--teal-dark);}
+.brand small{display:block;font-family:var(--font-body);font-weight:400;font-size:12.5px;color:var(--ink-soft);margin-top:2px;letter-spacing:0;}
+.back-link{
+  border:none;background:none;font-family:var(--font-body);font-size:15px;color:var(--teal-dark);
+  cursor:pointer;padding:6px 0;display:inline-flex;align-items:center;gap:6px;font-weight:600;
+}
+.back-link:hover{text-decoration:underline;}
+.back-link svg{width:16px;height:16px;flex:none;}
+main{flex:1;padding:18px 20px 60px;}
+.intro{margin:4px 0 22px;color:var(--ink-soft);font-size:15px;max-width:52ch;}
+.category-label{
+  font-family:var(--font-head);font-weight:600;font-size:13px;color:var(--teal-dark);
+  margin:26px 0 10px;padding-top:2px;
+}
+.category-label:first-of-type{margin-top:0;}
+.tool-list{border-top:1px solid var(--line);}
+.tool-row{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 4px;border-bottom:1px solid var(--line);
+  cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;
+  width:100%;text-align:left;font-family:inherit;color:inherit;
+}
+.tool-row:hover{background:var(--teal-tint);}
+.tool-row:disabled{cursor:not-allowed;opacity:.55;}
+.tool-row:disabled:hover{background:none;}
+.tool-icon{
+  flex:none;width:38px;height:38px;border-radius:9px;background:var(--teal-tint);
+  display:flex;align-items:center;justify-content:center;color:var(--teal-dark);
+}
+.tool-icon svg{width:19px;height:19px;}
+.tool-text{flex:1;min-width:0;padding-top:2px;}
+.tool-name{font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:8px;}
+.tool-desc{color:var(--ink-soft);font-size:13.5px;margin-top:2px;}
+.badge{
+  font-family:var(--font-body);font-size:11px;font-weight:600;color:var(--ochre);
+  background:var(--ochre-tint);border-radius:20px;padding:2px 9px;
+}
+.chevron{flex:none;color:var(--ink-soft);align-self:center;opacity:.6;}
+
+.tool-header{margin-bottom:18px;}
+.tool-title{font-family:var(--font-head);font-weight:700;font-size:22px;color:var(--teal-dark);margin:10px 0 4px;}
+.tool-sub{color:var(--ink-soft);font-size:14.5px;max-width:56ch;}
+.note{
+  font-size:13.5px;color:var(--ink-soft);background:var(--teal-tint);border-radius:var(--radius);
+  padding:10px 13px;margin:14px 0;border:1px solid #D3E3DC;
+}
+.note.warn{background:var(--ochre-tint);border-color:#E7D3AC;color:#7A5A19;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+.dropzone{
+  border:1.5px dashed #C7BFA8;border-radius:var(--radius);padding:30px 16px;text-align:center;
+  background:#FBFAF6;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.dropzone.drag{border-color:var(--teal);background:var(--teal-tint);}
+.dropzone p{margin:0 0 12px;color:var(--ink-soft);font-size:14.5px;}
+.btn{
+  font-family:var(--font-body);font-weight:600;font-size:14.5px;border-radius:8px;
+  padding:10px 18px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer;
+}
+.btn:hover{background:var(--teal-dark);border-color:var(--teal-dark);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn.secondary{background:#fff;color:var(--teal-dark);border-color:var(--teal);}
+.btn.secondary:hover{background:var(--teal-tint);}
+.btn.ghost{background:none;color:var(--ink-soft);border-color:var(--line);}
+.btn.ghost:hover{background:#F0EEE4;}
+.btn.danger{background:#fff;color:var(--danger);border-color:#DEB4AE;}
+.btn.danger:hover{background:var(--danger-tint);}
+.btn.block{width:100%;}
+.btn.sm{padding:6px 11px;font-size:13px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.row.between{justify-content:space-between;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.field .hint{font-weight:400;color:var(--ink-soft);font-size:12.5px;}
+.field input[type=text],.field input[type=password],.field input[type=number],.field select,.field textarea{
+  width:100%;font-family:inherit;font-size:15px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:8px;background:#fff;color:var(--ink);
+}
+.field input[type=range]{width:100%;accent-color:var(--teal);}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.seg button{
+  flex:1;padding:8px 10px;border:none;background:#fff;font-family:inherit;font-size:13.5px;
+  color:var(--ink-soft);cursor:pointer;border-right:1px solid var(--line);
+}
+.seg button:last-child{border-right:none;}
+.seg button.active{background:var(--teal);color:#fff;font-weight:600;}
+.filelist{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
+.file-item{
+  display:flex;align-items:center;gap:10px;padding:9px 11px;background:#FBFAF6;
+  border:1px solid var(--line);border-radius:8px;
+}
+.file-item .fname{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-item .fsize{color:var(--ink-soft);font-size:12.5px;flex:none;}
+.iconbtn{
+  border:1px solid var(--line);background:#fff;border-radius:6px;width:28px;height:28px;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);flex:none;
+}
+.iconbtn:hover{background:var(--teal-tint);color:var(--teal-dark);}
+.iconbtn svg{width:14px;height:14px;}
+.thumbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin:14px 0;}
+.thumb{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#FBFAF6;}
+.thumb .thimg{width:100%;aspect-ratio:3/4;object-fit:contain;background:#fff;display:block;border-bottom:1px solid var(--line);}
+.thumb .tctrl{display:flex;justify-content:space-between;padding:5px 6px;gap:4px;}
+.thumb .tlabel{font-size:11.5px;color:var(--ink-soft);text-align:center;padding:3px 0 0;}
+.result-box{
+  margin-top:16px;padding:16px;border-radius:var(--radius);background:var(--teal-tint);
+  border:1px solid #D3E3DC;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.result-box .rtext{flex:1;min-width:180px;}
+.result-box .rtitle{font-weight:600;color:var(--teal-dark);font-size:15px;}
+.result-box .rsub{color:var(--ink-soft);font-size:13px;margin-top:2px;}
+.spinner{
+  width:16px;height:16px;border:2px solid #C6DAD3;border-top-color:var(--teal-dark);
+  border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:7px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.placer{position:relative;display:inline-block;max-width:100%;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;}
+.placer img{display:block;max-width:100%;height:auto;}
+.placer .marker{
+  position:absolute;transform:translate(-50%,-100%);pointer-events:none;
+  font-family:inherit;white-space:pre;color:#000;
+}
+.pagenav{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13.5px;color:var(--ink-soft);}
+.sigpad-wrap canvas{border:1px solid var(--line);border-radius:8px;background:#fff;touch-action:none;width:100%;max-width:420px;height:160px;}
+.cropbox{position:absolute;border:2px dashed var(--teal);background:rgba(47,111,99,.08);pointer-events:none;}
+footer.appfoot{padding:20px;text-align:center;color:var(--ink-soft);font-size:12.5px;border-top:1px solid var(--line);}
+@media(max-width:480px){
+  .tool-title{font-size:19px;}
+  main{padding:16px 14px 50px;}
+  .topbar{padding:18px 14px 14px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand">เครื่องมือ PDF 2<small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
+    </div>
+  </div>
+  <main id="main"></main>
+  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด</footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+if (window['pdfjsLib']) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+}
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('ลงทะเบียน service worker ไม่สำเร็จ:', err);
+    });
+  });
+}
+</script>
+<script>
+/* ===================== Utilities ===================== */
+const $ = (sel, el) => (el||document).querySelector(sel);
+const $$ = (sel, el) => Array.from((el||document).querySelectorAll(sel));
+function el(tag, attrs, children){
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k === 'class') e.className = attrs[k];
+    else if(k === 'html') e.innerHTML = attrs[k];
+    else if(k.startsWith('on') && typeof attrs[k] === 'function') e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(c => { if(c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return e;
+}
+function fmtBytes(n){
+  if(n < 1024) return n + ' B';
+  if(n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+  return (n/1024/1024).toFixed(2) + ' MB';
+}
+function readAsArrayBuffer(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsArrayBuffer(file);
+  });
+}
+function readAsDataURL(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+}
+function loadImage(src){
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+function downloadBytes(bytes, filename, mime){
+  const blob = new Blob([bytes], {type: mime || 'application/octet-stream'});
+  downloadBlob(blob, filename);
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
+}
+function niceDate(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+async function pdfjsFromBytes(bytes){
+  const task = pdfjsLib.getDocument({data: bytes.slice ? bytes.slice(0) : bytes});
+  return task.promise;
+}
+async function renderPageToCanvas(pdfjsDoc, pageNumber, targetWidth){
+  const page = await pdfjsDoc.getPage(pageNumber);
+  const base = page.getViewport({scale:1});
+  const scale = targetWidth ? (targetWidth / base.width) : 1;
+  const viewport = page.getViewport({scale});
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const ctx = canvas.getContext('2d');
+  await page.render({canvasContext: ctx, viewport}).promise;
+  return canvas;
+}
+/* Render text (supports Thai via browser font rendering) to a transparent PNG data URL */
+function textToImageDataURL(text, opts){
+  opts = opts || {};
+  const fontPx = opts.fontPx || 28;
+  const fontFamily = opts.fontFamily || "'Sarabun','Noto Sans Thai',Tahoma,sans-serif";
+  const weight = opts.weight || 600;
+  const color = opts.color || '#000000';
+  const opacity = opts.opacity == null ? 1 : opts.opacity;
+  const rotateDeg = opts.rotateDeg || 0;
+  const pad = opts.pad == null ? 10 : opts.pad;
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = `${weight} ${fontPx}px ${fontFamily}`;
+  const metrics = mctx.measureText(text);
+  const textW = Math.ceil(metrics.width);
+  const textH = Math.ceil(fontPx * 1.35);
+  const rad = Math.abs(rotateDeg) * Math.PI / 180;
+  const rotW = Math.ceil(Math.abs(textW*Math.cos(rad)) + Math.abs(textH*Math.sin(rad))) + pad*2;
+  const rotH = Math.ceil(Math.abs(textW*Math.sin(rad)) + Math.abs(textH*Math.cos(rad))) + pad*2;
+  const canvas = document.createElement('canvas');
+  canvas.width = rotW; canvas.height = rotH;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(rotW/2, rotH/2);
+  ctx.rotate(-rotateDeg * Math.PI/180);
+  ctx.font = `${weight} ${fontPx}px ${fontFamily}`;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = opacity;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 0, 0);
+  return {dataUrl: canvas.toDataURL('image/png'), width: rotW, height: rotH};
+}
+async function fetchPngBytesFromDataUrl(dataUrl){
+  const res = await fetch(dataUrl);
+  return new Uint8Array(await res.arrayBuffer());
+}
+function fitInBox(w, h, maxW, maxH){
+  const r = Math.min(maxW/w, maxH/h, 1);
+  return {width: w*r, height: h*r};
+}
+function toast(msg, isErr){
+  let t = $('#toast');
+  if(!t){
+    t = el('div', {id:'toast'});
+    t.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#20302C;color:#fff;padding:11px 18px;border-radius:8px;font-size:14px;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2);max-width:88vw;text-align:center;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = isErr ? '#B0392F' : '#20302C';
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.transition='opacity .4s'; t.style.opacity='0'; }, 3200);
+}
+/* ===================== Icons (monochrome, stroke-based) ===================== */
+const ICONS = {
+  scan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" stroke-linecap="round"/><rect x="7" y="9" width="10" height="7" rx="1"/></svg>`,
+  merge: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="10" height="13" rx="1.5"/><path d="M14 9h4a1.5 1.5 0 0 1 1.5 1.5V19A1.5 1.5 0 0 1 18 20.5H9.5A1.5 1.5 0 0 1 8 19v-2" stroke-linecap="round"/></svg>`,
+  split: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="8" height="16" rx="1.3"/><rect x="13" y="4" width="8" height="16" rx="1.3"/><path d="M12 4v16" stroke-dasharray="2 2"/></svg>`,
+  reorder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="4" width="7" height="9" rx="1"/><rect x="13.5" y="4" width="7" height="5" rx="1"/><rect x="13.5" y="11" width="7" height="9" rx="1"/><rect x="3.5" y="15" width="7" height="5" rx="1"/></svg>`,
+  compress: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v4a1 1 0 0 1-1 1H4M15 4v4a1 1 0 0 0 1 1h4M9 20v-4a1 1 0 0 0-1-1H4M15 20v-4a1 1 0 0 1 1-1h4"/></svg>`,
+  image2pdf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="12" height="16" rx="1.4"/><circle cx="7" cy="9" r="1.3"/><path d="M4.5 18l3-3.5 2.2 2.4 2.8-3.4 2.5 3" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 8v9M14.3 13.5 18 17.3l3.7-3.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pdf2image: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="4" width="12" height="16" rx="1.4"/><circle cx="13" cy="9" r="1.3"/><path d="M10.5 18l3-3.5 2.2 2.4 2.8-3.4 2.5 3" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 16V7M2.3 11.5 6 7.7l3.7 3.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  imgshrink: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="14" rx="1.4"/><circle cx="8.5" cy="9.5" r="1.3"/><path d="M4 16.5l4-4.5 2.6 2.8 3.4-4 4 5.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pagenum: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.4"/><path d="M9 15.5h2M13 15.5h2M9.5 17.7h1.2M13.5 17.7h1" stroke-linecap="round"/></svg>`,
+  watermark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="1.4"/><path d="M8 17l3.2-9L14 14l1.6-3.6L18 14" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`,
+  crop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></svg>`,
+  pdf2word: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M8.5 12.5l1.2 5 1.3-4 1.3 4 1.2-5"/></svg>`,
+  photosign: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><path d="M7.5 15.5c1-2.2 2-3.2 2.8-3.2 1 0 1 2.4 2 2.4 1.1 0 1.6-2.4 3.2-2.4"/></svg>`,
+  redact: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><rect x="7" y="8" width="10" height="3" fill="currentColor" stroke="none"/><path d="M7 15h6"/></svg>`,
+  form: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><rect x="8.5" y="10" width="7" height="3" rx=".5"/><path d="M8.5 16.5h4"/></svg>`,
+  ocr: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M8 15l2.5-6 2.5 6M8.8 13h3.4M15 9v6"/></svg>`,
+  office2pdf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="9" height="14" rx="1.2"/><path d="M5.5 9h4M5.5 12h4M5.5 15h2.5"/><path d="M14 12h5M17 9.5l2.5 2.5-2.5 2.5"/></svg>`,
+  seal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="5.2"/><path d="M9.6 12h4.8"/></svg>`,
+  lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`,
+  sign: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5c1.2-3 2.6-4.5 3.6-4.5 1.4 0 1.4 3.4 2.8 3.4 1.6 0 2.6-6.7 4.2-6.7 1.3 0 1.1 4.8 2.4 4.8 1 0 2-2.2 3-2.2"/><path d="M3 21h18"/></svg>`,
+  stamp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 15.5V12a4 4 0 1 1 8 0v3.5"/><path d="M6 15.5h12l1 3.5H5l1-3.5z"/><path d="M4 21.5h16"/></svg>`,
+  doc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke-linejoin="round"/><path d="M14 3v4h4" stroke-linejoin="round"/></svg>`,
+  up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>`,
+  down: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
+  close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  prev: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>`,
+  next: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`,
+  rotate: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a8 8 0 1 1 2 6"/><path d="M3 4v6h6"/></svg>`,
+  back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>`,
+};
+/* ===================== Shared widgets ===================== */
+
+function buildDropzone({accept, multiple, label, sub, onFiles}){
+  const input = el('input', {type:'file', accept: accept||'', style:'display:none'});
+  if(multiple) input.multiple = true;
+  const zone = el('div', {class:'dropzone'}, [
+    el('p', {}, [label || 'ลากไฟล์มาวาง หรือแตะเพื่อเลือกไฟล์']),
+    el('button', {class:'btn', type:'button'}, [sub || 'เลือกไฟล์'])
+  ]);
+  zone.appendChild(input);
+  zone.addEventListener('click', () => input.click());
+  ['dragenter','dragover'].forEach(evt => zone.addEventListener(evt, e => {
+    e.preventDefault(); e.stopPropagation(); zone.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(evt => zone.addEventListener(evt, e => {
+    e.preventDefault(); e.stopPropagation(); zone.classList.remove('drag');
+  }));
+  zone.addEventListener('drop', e => {
+    const files = Array.from(e.dataTransfer.files || []);
+    if(files.length) onFiles(files);
+  });
+  input.addEventListener('change', () => {
+    const files = Array.from(input.files || []);
+    if(files.length) onFiles(files);
+    input.value = '';
+  });
+  if(window.__sharedFiles){
+    const sf = window.__sharedFiles.filter(f => fileMatchesAccept(f, accept));
+    window.__sharedFiles = null;
+    if(sf.length) setTimeout(() => onFiles(multiple ? sf : sf.slice(0,1)), 0);
+  }
+  return zone;
+}
+
+function iconChip(svgName){
+  const wrap = el('span');
+  wrap.innerHTML = ICONS[svgName] || ICONS.doc;
+  return wrap.firstElementChild;
+}
+
+/* Renders a file list with up/down/remove controls. items: [{name,size,...}] mutated in place. onChange called after any mutation. */
+function buildFileList(items, {onChange, showSize}={}){
+  const wrap = el('div', {class:'filelist'});
+  function draw(){
+    wrap.innerHTML = '';
+    items.forEach((it, i) => {
+      const row = el('div', {class:'file-item'}, [
+        el('span', {class:'fname'}, [it.name]),
+      ]);
+      if(showSize !== false && it.size != null){
+        row.appendChild(el('span', {class:'fsize'}, [fmtBytes(it.size)]));
+      }
+      const up = el('button', {class:'iconbtn', title:'เลื่อนขึ้น', html: ICONS.up});
+      up.disabled = i===0;
+      up.addEventListener('click', () => { [items[i-1],items[i]]=[items[i],items[i-1]]; draw(); onChange && onChange(); });
+      const down = el('button', {class:'iconbtn', title:'เลื่อนลง', html: ICONS.down});
+      down.disabled = i===items.length-1;
+      down.addEventListener('click', () => { [items[i+1],items[i]]=[items[i],items[i+1]]; draw(); onChange && onChange(); });
+      const rm = el('button', {class:'iconbtn', title:'ลบ', html: ICONS.close});
+      rm.addEventListener('click', () => { items.splice(i,1); draw(); onChange && onChange(); });
+      row.appendChild(up); row.appendChild(down); row.appendChild(rm);
+      wrap.appendChild(row);
+    });
+  }
+  draw();
+  return {el: wrap, redraw: draw};
+}
+
+/* Interactive PDF page viewer for picking an x/y position (used by sign + stamp tools).
+   pdfBytes: Uint8Array. onPageReady(pageIndex, pageWidthPt, pageHeightPt) optional.
+   Returns {el, getState, setPage, addOverlay, clearOverlays, destroy} */
+async function buildPagePlacer(pdfBytes, opts){
+  opts = opts || {};
+  const pdfjsDoc = await pdfjsFromBytes(pdfBytes);
+  const numPages = pdfjsDoc.numPages;
+  let current = 1;
+  const wrap = el('div');
+  const nav = el('div', {class:'pagenav'});
+  const prevBtn = el('button', {class:'iconbtn', html: ICONS.prev});
+  const nextBtn = el('button', {class:'iconbtn', html: ICONS.next});
+  const label = el('span', {}, [`หน้า ${current} จาก ${numPages}`]);
+  nav.appendChild(prevBtn); nav.appendChild(label); nav.appendChild(nextBtn);
+  const placer = el('div', {class:'placer'});
+  const img = el('img');
+  placer.appendChild(img);
+  wrap.appendChild(nav);
+  wrap.appendChild(placer);
+  if(numPages <= 1){ nav.style.display = 'none'; }
+
+  let pageW=1, pageH=1;
+  let markers = [];
+  let onPick = opts.onPick || function(){};
+
+  async function draw(){
+    const canvas = await renderPageToCanvas(pdfjsDoc, current, 640);
+    const page = await pdfjsDoc.getPage(current);
+    const vp = page.getViewport({scale:1});
+    pageW = vp.width; pageH = vp.height;
+    img.src = canvas.toDataURL('image/png');
+    label.textContent = `หน้า ${current} จาก ${numPages}`;
+    renderMarkers();
+    opts.onPageReady && opts.onPageReady(current, pageW, pageH);
+  }
+  function renderMarkers(){
+    $$('.marker', placer).forEach(m => m.remove());
+    markers.filter(m => m.page === current).forEach(m => {
+      const d = el('div', {class:'marker', style:`left:${m.xr*100}%;top:${m.yr*100}%;`, html: m.html});
+      placer.appendChild(d);
+    });
+  }
+  placer.addEventListener('click', e => {
+    const r = img.getBoundingClientRect();
+    if(r.width === 0) return;
+    const xr = (e.clientX - r.left) / r.width;
+    const yr = (e.clientY - r.top) / r.height;
+    onPick({page: current, xr, yr, pageW, pageH});
+  });
+  prevBtn.addEventListener('click', () => { if(current>1){ current--; draw(); }});
+  nextBtn.addEventListener('click', () => { if(current<numPages){ current++; draw(); }});
+  await draw();
+
+  return {
+    el: wrap,
+    getCurrentPage: () => current,
+    setMarker(m){ markers = [m]; renderMarkers(); },
+    addMarker(m){ markers.push(m); renderMarkers(); },
+    clearMarkers(){ markers = []; renderMarkers(); },
+    numPages,
+  };
+}
+
+/* Simple signature pad. Returns {el, clear, isEmpty, toPngDataUrl} */
+function buildSignaturePad(){
+  const wrap = el('div', {class:'sigpad-wrap'});
+  const canvas = el('canvas', {width:420, height:160});
+  wrap.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  ctx.lineWidth = 2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#20302C';
+  let drawing = false, hasInk = false, last=null;
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    return {x:(cx-r.left)*(canvas.width/r.width), y:(cy-r.top)*(canvas.height/r.height)};
+  }
+  function start(e){ e.preventDefault(); drawing = true; last = pos(e); }
+  function move(e){
+    if(!drawing) return; e.preventDefault();
+    const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    last = p; hasInk = true;
+  }
+  function end(){ drawing = false; }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+  return {
+    el: wrap,
+    clear(){ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; },
+    isEmpty(){ return !hasInk; },
+    async loadImage(dataUrl){
+      const im = await loadImage(dataUrl);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const k = Math.min((canvas.width-16)/im.width, (canvas.height-16)/im.height);
+      const w = im.width*k, h = im.height*k;
+      ctx.drawImage(im, (canvas.width-w)/2, (canvas.height-h)/2, w, h); hasInk = true;
+    },
+    toPngDataUrl(){ return canvas.toDataURL('image/png'); },
+  };
+}
+/* ===================== Tool registry (must load before tool_*.js files) ===================== */
+const CATEGORIES = [
+  {id:'create', label:'สแกน และสร้างไฟล์'},
+  {id:'organize', label:'จัดการหน้าเอกสาร'},
+  {id:'convert', label:'แปลงและลดขนาดไฟล์'},
+  {id:'mark', label:'ทำเครื่องหมายและลงชื่อ'},
+];
+const TOOLS = [];
+function registerTool(t){ t.accepts = t.accepts || TOOL_ACCEPTS[t.id] || 'application/pdf,.pdf'; TOOLS.push(t); }
+/* file types each tool can receive from the share sheet */
+const TOOL_ACCEPTS = {scan:'image/*', img2pdf:'image/*', imgshrink:'image/*', photosign:'image/*', ocr:'application/pdf,image/*,.pdf', office2pdf:'.docx,.xlsx,.xls,.csv,.ods', merge:'application/pdf,.pdf'};
+/* ===================== Shared: Images -> PDF builder ===================== */
+/* used by both "สแกนเอกสาร" and "JPG -> PDF" tools */
+function buildImagesToPdfTool(container, {allowCamera, outNameBase}){
+  let items = []; // {file, dataUrl, rotate, mode}
+  const dzWrap = el('div', {class:'card'});
+  container.appendChild(dzWrap);
+
+  const captureRow = el('div', {class:'row', style:'margin-bottom:12px;'});
+  if(allowCamera){
+    const camInput = el('input', {type:'file', accept:'image/*', capture:'environment', style:'display:none'});
+    const camBtn = el('button', {class:'btn'}, ['ถ่ายภาพเอกสาร']);
+    camBtn.addEventListener('click', () => camInput.click());
+    camInput.addEventListener('change', () => handleFiles(Array.from(camInput.files||[])).then(()=>camInput.value=''));
+    captureRow.appendChild(camBtn);
+    captureRow.appendChild(camInput);
+  }
+  const dz = buildDropzone({
+    accept:'image/*', multiple:true,
+    label: allowCamera ? 'หรือเลือกรูปจากเครื่อง (เลือกได้หลายภาพพร้อมกัน)' : 'ลากรูปมาวาง หรือแตะเพื่อเลือกรูป (เลือกได้หลายภาพ)',
+    sub: 'เลือกจากเครื่อง',
+    onFiles: handleFiles,
+  });
+  dzWrap.appendChild(captureRow);
+  dzWrap.appendChild(dz);
+
+  const gridWrap = el('div');
+  container.appendChild(gridWrap);
+  const actionWrap = el('div');
+  container.appendChild(actionWrap);
+  const resultWrap = el('div');
+  container.appendChild(resultWrap);
+
+  async function handleFiles(files){
+    for(const f of files){
+      if(!f.type.startsWith('image/')) continue;
+      const dataUrl = await readAsDataURL(f);
+      items.push({file:f, dataUrl, rotate:0, mode:'color'});
+    }
+    drawGrid();
+  }
+
+  function drawGrid(){
+    gridWrap.innerHTML = '';
+    actionWrap.innerHTML = '';
+    if(items.length === 0) return;
+    const grid = el('div', {class:'thumbgrid'});
+    items.forEach((it, i) => {
+      const img = el('img', {class:'thimg', src: it.dataUrl, style:`transform:rotate(${it.rotate}deg) ${it.mode==='bw'?'filter:grayscale(1) contrast(1.4);':it.mode==='gray'?'filter:grayscale(1);':''}`});
+      const rotBtn = el('button', {class:'iconbtn', title:'หมุนภาพ', html: ICONS.rotate});
+      rotBtn.addEventListener('click', () => { it.rotate = (it.rotate+90)%360; drawGrid(); });
+      const delBtn = el('button', {class:'iconbtn', title:'ลบ', html: ICONS.close});
+      delBtn.addEventListener('click', () => { items.splice(i,1); drawGrid(); });
+      const modeSel = el('select', {style:'font-size:11px;padding:3px;border-radius:5px;border:1px solid var(--line);flex:1;'});
+      [['color','สี'],['gray','ระดับเทา'],['bw','ขาวดำ']].forEach(([v,l]) => {
+        const o = el('option', {value:v}, [l]); if(v===it.mode) o.selected = true; modeSel.appendChild(o);
+      });
+      modeSel.addEventListener('change', () => { it.mode = modeSel.value; drawGrid(); });
+      const cell = el('div', {class:'thumb'}, [
+        img,
+        el('div', {class:'tctrl'}, [modeSel, rotBtn, delBtn]),
+        el('div', {class:'tlabel'}, [`ภาพที่ ${i+1}`]),
+      ]);
+      grid.appendChild(cell);
+    });
+    gridWrap.appendChild(grid);
+    const buildBtn = el('button', {class:'btn block'}, [`สร้างไฟล์ PDF (${items.length} หน้า)`]);
+    buildBtn.addEventListener('click', buildPdf);
+    actionWrap.appendChild(buildBtn);
+  }
+
+  async function processedJpegDataUrl(it){
+    const img = await loadImage(it.dataUrl);
+    const swap = it.rotate % 180 !== 0;
+    const w = swap ? img.height : img.width;
+    const h = swap ? img.width : img.height;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.translate(w/2, h/2);
+    ctx.rotate(it.rotate * Math.PI/180);
+    ctx.drawImage(img, -img.width/2, -img.height/2);
+    ctx.restore();
+    if(it.mode === 'gray' || it.mode === 'bw'){
+      const imgData = ctx.getImageData(0,0,w,h);
+      const d = imgData.data;
+      for(let i=0;i<d.length;i+=4){
+        let v = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        if(it.mode === 'bw') v = v > 150 ? 255 : (v < 90 ? 0 : v);
+        d[i]=d[i+1]=d[i+2]=v;
+      }
+      ctx.putImageData(imgData,0,0);
+    }
+    return canvas.toDataURL('image/jpeg', 0.9);
+  }
+
+  async function buildPdf(){
+    resultWrap.innerHTML = '';
+    resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังสร้างไฟล์ PDF...']));
+    try{
+      const pdfDoc = await PDFLib.PDFDocument.create();
+      for(const it of items){
+        const jpegUrl = await processedJpegDataUrl(it);
+        const jpegBytes = await fetchPngBytesFromDataUrl(jpegUrl);
+        const jpg = await pdfDoc.embedJpg(jpegBytes);
+        const A4W = 595.28, A4H = 841.89;
+        const isLandscape = jpg.width > jpg.height;
+        const pageW = isLandscape ? A4H : A4W;
+        const pageH = isLandscape ? A4W : A4H;
+        const page = pdfDoc.addPage([pageW, pageH]);
+        const margin = 18;
+        const fit = fitInBox(jpg.width, jpg.height, pageW-margin*2, pageH-margin*2);
+        page.drawImage(jpg, {
+          x:(pageW-fit.width)/2, y:(pageH-fit.height)/2,
+          width: fit.width, height: fit.height,
+        });
+      }
+      const bytes = await pdfDoc.save();
+      resultWrap.innerHTML = '';
+      const box = el('div', {class:'result-box'}, [
+        el('div', {class:'rtext'}, [
+          el('div', {class:'rtitle'}, ['สร้างไฟล์ PDF เรียบร้อย']),
+          el('div', {class:'rsub'}, [`${items.length} หน้า · ${fmtBytes(bytes.length)}`]),
+        ]),
+      ]);
+      const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+      dl.addEventListener('click', () => downloadBytes(bytes, `${outNameBase||'เอกสาร'}-${niceDate()}.pdf`, 'application/pdf'));
+      box.appendChild(dl);
+      resultWrap.appendChild(box);
+    }catch(err){
+      console.error(err);
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note warn'}, ['สร้างไฟล์ไม่สำเร็จ: ' + err.message]));
+    }
+  }
+}
+
+registerTool({
+  id:'scan', cat:'create', icon:'scan',
+  name:'สแกนเอกสาร', desc:'ถ่ายภาพเอกสารแล้วแปลงเป็น PDF พร้อมปรับหมุน/ขาวดำ',
+  longDesc:'ถ่ายภาพหรือเลือกรูปเอกสารหลายหน้า ปรับหมุนและโทนสีทีละภาพ แล้วรวมเป็นไฟล์ PDF เดียว',
+  render(c){ buildImagesToPdfTool(c, {allowCamera:true, outNameBase:'สแกนเอกสาร'}); }
+});
+registerTool({
+  id:'img2pdf', cat:'create', icon:'image2pdf',
+  name:'JPG / PNG → PDF', desc:'รวมรูปภาพหลายไฟล์เป็นเอกสาร PDF เดียว',
+  longDesc:'เลือกรูปภาพที่มีอยู่แล้วในเครื่อง จัดลำดับ แล้วรวมเป็นไฟล์ PDF เดียว',
+  render(c){ buildImagesToPdfTool(c, {allowCamera:false, outNameBase:'รูปภาพ'}); }
+});
+/* ===================== รวมไฟล์ PDF ===================== */
+registerTool({
+  id:'merge', cat:'organize', icon:'merge',
+  name:'รวมไฟล์ PDF', desc:'ต่อหลายไฟล์ PDF เข้าด้วยกันตามลำดับที่กำหนด',
+  longDesc:'เลือกไฟล์ PDF ตั้งแต่ 2 ไฟล์ขึ้นไป จัดลำดับตามต้องการ แล้วรวมเป็นไฟล์เดียว',
+  render(container){
+    let items = []; // {file, bytes}
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:true,
+      label:'ลากไฟล์ PDF มาวาง หรือแตะเพื่อเลือก (เลือกได้หลายไฟล์)', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        for(const f of files){
+          if(f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) continue;
+          items.push({name:f.name, size:f.size, file:f});
+        }
+        redrawList();
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const listWrap = el('div');
+    container.appendChild(listWrap);
+    const actionWrap = el('div');
+    container.appendChild(actionWrap);
+    const resultWrap = el('div');
+    container.appendChild(resultWrap);
+
+    function redrawList(){
+      listWrap.innerHTML = '';
+      actionWrap.innerHTML = '';
+      if(items.length === 0) return;
+      const fl = buildFileList(items, {onChange: redrawList});
+      listWrap.appendChild(fl.el);
+      const btn = el('button', {class:'btn block'}, [`รวมไฟล์ (${items.length} ไฟล์)`]);
+      btn.disabled = items.length < 2;
+      if(items.length < 2) listWrap.appendChild(el('div',{class:'note'},['เลือกไฟล์อย่างน้อย 2 ไฟล์เพื่อรวม']));
+      btn.addEventListener('click', doMerge);
+      actionWrap.appendChild(btn);
+    }
+    async function doMerge(){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังรวมไฟล์...']));
+      try{
+        const out = await PDFLib.PDFDocument.create();
+        for(const it of items){
+          const buf = await readAsArrayBuffer(it.file);
+          const src = await PDFLib.PDFDocument.load(buf, {ignoreEncryption:true});
+          const pages = await out.copyPages(src, src.getPageIndices());
+          pages.forEach(p => out.addPage(p));
+        }
+        const bytes = await out.save();
+        resultWrap.innerHTML = '';
+        const box = el('div', {class:'result-box'}, [
+          el('div', {class:'rtext'}, [
+            el('div', {class:'rtitle'}, ['รวมไฟล์เรียบร้อย']),
+            el('div', {class:'rsub'}, [`${out.getPageCount()} หน้า · ${fmtBytes(bytes.length)}`]),
+          ]),
+        ]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', () => downloadBytes(bytes, `รวมไฟล์-${niceDate()}.pdf`, 'application/pdf'));
+        box.appendChild(dl);
+        resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['รวมไฟล์ไม่สำเร็จ: ไฟล์อาจเสียหายหรือมีรหัสผ่าน (' + err.message + ')']));
+      }
+    }
+  }
+});
+
+/* ===================== แยกไฟล์ PDF ===================== */
+registerTool({
+  id:'split', cat:'organize', icon:'split',
+  name:'แยกไฟล์ PDF', desc:'ดึงเฉพาะหน้าที่ต้องการออกมาเป็นไฟล์ใหม่',
+  longDesc:'เลือกไฟล์ PDF แล้วระบุช่วงหน้าที่ต้องการ ระบบจะสร้างไฟล์ PDF แยกให้ตามช่วงที่กำหนด',
+  render(container){
+    let srcFile=null, srcBuf=null, pageCount=0;
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false,
+      label:'เลือกไฟล์ PDF ที่ต้องการแยกหน้า', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile = f;
+        srcBuf = await readAsArrayBuffer(f);
+        try{
+          const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+          pageCount = doc.getPageCount();
+          drawForm();
+        }catch(err){
+          toast('เปิดไฟล์ไม่สำเร็จ: ' + err.message, true);
+        }
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div');
+    container.appendChild(formWrap);
+    const resultWrap = el('div');
+    container.appendChild(resultWrap);
+
+    function drawForm(){
+      formWrap.innerHTML = '';
+      resultWrap.innerHTML = '';
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, [`ไฟล์ "${srcFile.name}" มีทั้งหมด ${pageCount} หน้า`]));
+      const field = el('div', {class:'field'}, [
+        el('label', {}, ['ระบุช่วงหน้าที่ต้องการแยก ', el('span',{class:'hint'},['(เช่น 1-3,5,7-8 — คั่นด้วยจุลภาคเพื่อสร้างหลายไฟล์)'])]),
+        el('input', {type:'text', id:'splitRange', placeholder:`เช่น 1-${Math.min(3,pageCount)}`}),
+      ]);
+      card.appendChild(field);
+      const rowBtns = el('div', {class:'row'});
+      const goBtn = el('button', {class:'btn'}, ['แยกไฟล์ตามช่วงที่ระบุ']);
+      const eachBtn = el('button', {class:'btn secondary'}, ['แยกทุกหน้าเป็นไฟล์เดี่ยว']);
+      rowBtns.appendChild(goBtn); rowBtns.appendChild(eachBtn);
+      card.appendChild(rowBtns);
+      formWrap.appendChild(card);
+      goBtn.addEventListener('click', () => {
+        const raw = $('#splitRange').value.trim();
+        if(!raw){ toast('กรุณาระบุช่วงหน้า', true); return; }
+        const groups = parseRanges(raw, pageCount);
+        if(!groups){ toast('รูปแบบช่วงหน้าไม่ถูกต้อง', true); return; }
+        runSplit(groups);
+      });
+      eachBtn.addEventListener('click', () => {
+        const groups = [];
+        for(let i=1;i<=pageCount;i++) groups.push([i]);
+        runSplit(groups);
+      });
+    }
+    function parseRanges(raw, max){
+      const parts = raw.split(',').map(s=>s.trim()).filter(Boolean);
+      const groups = [];
+      for(const p of parts){
+        const m = p.match(/^(\d+)(?:-(\d+))?$/);
+        if(!m) return null;
+        let a = parseInt(m[1],10), b = m[2] ? parseInt(m[2],10) : a;
+        if(a>b) [a,b]=[b,a];
+        if(a<1 || b>max) return null;
+        const g = [];
+        for(let i=a;i<=b;i++) g.push(i);
+        groups.push(g);
+      }
+      return groups.length ? groups : null;
+    }
+    async function runSplit(groups){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังแยกไฟล์...']));
+      try{
+        const results = [];
+        for(const g of groups){
+          const out = await PDFLib.PDFDocument.create();
+          const src = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+          const pages = await out.copyPages(src, g.map(n=>n-1));
+          pages.forEach(p => out.addPage(p));
+          const bytes = await out.save();
+          const label = g.length===1 ? `หน้า ${g[0]}` : `หน้า ${g[0]}-${g[g.length-1]}`;
+          results.push({label, bytes});
+        }
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note'}, [`แยกไฟล์สำเร็จ ${results.length} ไฟล์`]));
+        results.forEach((r,i) => {
+          const box = el('div', {class:'result-box'}, [
+            el('div', {class:'rtext'}, [
+              el('div', {class:'rtitle'}, [r.label]),
+              el('div', {class:'rsub'}, [fmtBytes(r.bytes.length)]),
+            ]),
+          ]);
+          const dl = el('button', {class:'btn'}, ['ดาวน์โหลด']);
+          dl.addEventListener('click', () => downloadBytes(r.bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-${r.label.replace(/\s/g,'')}.pdf`, 'application/pdf'));
+          box.appendChild(dl);
+          resultWrap.appendChild(box);
+        });
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['แยกไฟล์ไม่สำเร็จ: ' + err.message]));
+      }
+    }
+  }
+});
+/* ===================== จัดเรียง/ลบ/หมุนหน้า PDF ===================== */
+registerTool({
+  id:'reorder', cat:'organize', icon:'reorder',
+  name:'จัดเรียงหน้า PDF', desc:'สลับลำดับ หมุน หรือลบหน้าที่ไม่ต้องการ',
+  longDesc:'ดูภาพย่อของทุกหน้า แล้วสลับลำดับ หมุน หรือลบหน้าที่ไม่ต้องการ ก่อนบันทึกเป็นไฟล์ใหม่',
+  render(container){
+    let srcFile=null, srcBuf=null;
+    let pages = []; // {origIndex, rotate}
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false,
+      label:'เลือกไฟล์ PDF ที่ต้องการจัดหน้า', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile = f;
+        srcBuf = await readAsArrayBuffer(f);
+        resultWrap.innerHTML = '';
+        loadWrap.innerHTML = '';
+        loadWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังโหลดหน้าเอกสาร...']));
+        try{
+          const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+          const n = doc.getPageCount();
+          pages = Array.from({length:n}, (_,i) => ({origIndex:i, rotate:0}));
+          const pdfjsDoc = await pdfjsFromBytes(new Uint8Array(srcBuf));
+          thumbs = [];
+          for(let i=0;i<n;i++){
+            const canvas = await renderPageToCanvas(pdfjsDoc, i+1, 220);
+            thumbs.push(canvas.toDataURL('image/jpeg', 0.72));
+          }
+          loadWrap.innerHTML = '';
+          drawGrid();
+        }catch(err){
+          console.error(err);
+          loadWrap.innerHTML = '';
+          loadWrap.appendChild(el('div', {class:'note warn'}, ['เปิดไฟล์ไม่สำเร็จ: ' + err.message]));
+        }
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const loadWrap = el('div');
+    container.appendChild(loadWrap);
+    const gridWrap = el('div');
+    container.appendChild(gridWrap);
+    const actionWrap = el('div');
+    container.appendChild(actionWrap);
+    const resultWrap = el('div');
+    container.appendChild(resultWrap);
+    let thumbs = [];
+
+    function drawGrid(){
+      gridWrap.innerHTML = '';
+      actionWrap.innerHTML = '';
+      if(pages.length === 0){
+        gridWrap.appendChild(el('div', {class:'note'}, ['ไฟล์นี้ไม่มีหน้าเหลืออยู่แล้ว']));
+        return;
+      }
+      const grid = el('div', {class:'thumbgrid'});
+      pages.forEach((p, i) => {
+        const img = el('img', {class:'thimg', src: thumbs[p.origIndex], style:`transform:rotate(${p.rotate}deg);`});
+        const up = el('button', {class:'iconbtn', title:'เลื่อนไปก่อนหน้า', html: ICONS.prev});
+        up.disabled = i===0;
+        up.addEventListener('click', () => { [pages[i-1],pages[i]]=[pages[i],pages[i-1]]; drawGrid(); });
+        const down = el('button', {class:'iconbtn', title:'เลื่อนไปหลัง', html: ICONS.next});
+        down.disabled = i===pages.length-1;
+        down.addEventListener('click', () => { [pages[i+1],pages[i]]=[pages[i],pages[i+1]]; drawGrid(); });
+        const rot = el('button', {class:'iconbtn', title:'หมุน', html: ICONS.rotate});
+        rot.addEventListener('click', () => { p.rotate = (p.rotate+90)%360; drawGrid(); });
+        const del = el('button', {class:'iconbtn', title:'ลบหน้านี้', html: ICONS.close});
+        del.addEventListener('click', () => { pages.splice(i,1); drawGrid(); });
+        const cell = el('div', {class:'thumb'}, [
+          img,
+          el('div', {class:'tctrl'}, [up, rot, down, del]),
+          el('div', {class:'tlabel'}, [`เดิม หน้า ${p.origIndex+1} → ตำแหน่งที่ ${i+1}`]),
+        ]);
+        grid.appendChild(cell);
+      });
+      gridWrap.appendChild(grid);
+      const saveBtn = el('button', {class:'btn block'}, ['บันทึกไฟล์ใหม่']);
+      saveBtn.addEventListener('click', doSave);
+      actionWrap.appendChild(saveBtn);
+    }
+    async function doSave(){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังบันทึก...']));
+      try{
+        const src = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        const out = await PDFLib.PDFDocument.create();
+        const copied = await out.copyPages(src, pages.map(p=>p.origIndex));
+        copied.forEach((cp, i) => {
+          if(pages[i].rotate){
+            const current = cp.getRotation().angle || 0;
+            cp.setRotation(PDFLib.degrees(current + pages[i].rotate));
+          }
+          out.addPage(cp);
+        });
+        const bytes = await out.save();
+        resultWrap.innerHTML = '';
+        const box = el('div', {class:'result-box'}, [
+          el('div', {class:'rtext'}, [
+            el('div', {class:'rtitle'}, ['บันทึกไฟล์เรียบร้อย']),
+            el('div', {class:'rsub'}, [`${out.getPageCount()} หน้า · ${fmtBytes(bytes.length)}`]),
+          ]),
+        ]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', () => downloadBytes(bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-จัดหน้าใหม่.pdf`, 'application/pdf'));
+        box.appendChild(dl);
+        resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['บันทึกไม่สำเร็จ: ' + err.message]));
+      }
+    }
+  }
+});
+/* ===================== ลดขนาด PDF (rasterize + recompress) ===================== */
+registerTool({
+  id:'compress', cat:'convert', icon:'compress',
+  name:'ลดขนาดไฟล์ PDF', desc:'บีบอัดไฟล์ PDF ที่มีขนาดใหญ่ให้เล็กลง',
+  longDesc:'เหมาะกับ PDF ที่ได้จากการสแกน/ถ่ายภาพ วิธีนี้จะแปลงแต่ละหน้าเป็นภาพคุณภาพต่ำลงแล้วประกอบใหม่ ข้อความในไฟล์จะไม่สามารถคัดลอกได้อีก',
+  render(container){
+    let srcFile=null, srcBuf=null;
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false,
+      label:'เลือกไฟล์ PDF ที่ต้องการลดขนาด', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile = f; srcBuf = await readAsArrayBuffer(f);
+        drawForm();
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div');
+    container.appendChild(formWrap);
+    const resultWrap = el('div');
+    container.appendChild(resultWrap);
+    let quality = 'medium';
+
+    function drawForm(){
+      resultWrap.innerHTML = '';
+      formWrap.innerHTML = '';
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, [`ไฟล์ "${srcFile.name}" · ขนาดต้นฉบับ ${fmtBytes(srcFile.size)}`]));
+      const field = el('div', {class:'field'}, [el('label',{},['ระดับการบีบอัด'])]);
+      const seg = el('div', {class:'seg'});
+      [['high','บีบมาก (ไฟล์เล็กสุด)'],['medium','กลาง'],['low','บีบน้อย (คมชัดกว่า)']].forEach(([v,l]) => {
+        const b = el('button', {type:'button'}, [l]);
+        if(v===quality) b.classList.add('active');
+        b.addEventListener('click', () => { quality = v; $$('button',seg).forEach(x=>x.classList.remove('active')); b.classList.add('active'); });
+        seg.appendChild(b);
+      });
+      field.appendChild(seg);
+      card.appendChild(field);
+      const goBtn = el('button', {class:'btn block'}, ['ลดขนาดไฟล์']);
+      goBtn.addEventListener('click', doCompress);
+      card.appendChild(goBtn);
+      formWrap.appendChild(card);
+    }
+    async function doCompress(){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังบีบอัด อาจใช้เวลาสักครู่...']));
+      try{
+        const presets = {high:{scale:1.0, q:0.55}, medium:{scale:1.35, q:0.7}, low:{scale:1.8, q:0.82}};
+        const preset = presets[quality];
+        const pdfjsDoc = await pdfjsFromBytes(new Uint8Array(srcBuf));
+        const out = await PDFLib.PDFDocument.create();
+        const n = pdfjsDoc.numPages;
+        for(let i=1;i<=n;i++){
+          const page = await pdfjsDoc.getPage(i);
+          const vp1 = page.getViewport({scale:1});
+          const canvas = await renderPageToCanvas(pdfjsDoc, i, vp1.width * preset.scale);
+          const jpegUrl = canvas.toDataURL('image/jpeg', preset.q);
+          const jpegBytes = await fetchPngBytesFromDataUrl(jpegUrl);
+          const jpg = await out.embedJpg(jpegBytes);
+          const p = out.addPage([vp1.width, vp1.height]);
+          p.drawImage(jpg, {x:0, y:0, width:vp1.width, height:vp1.height});
+        }
+        const bytes = await out.save();
+        resultWrap.innerHTML = '';
+        const pct = Math.round((1 - bytes.length/srcFile.size)*100);
+        const box = el('div', {class:'result-box'}, [
+          el('div', {class:'rtext'}, [
+            el('div', {class:'rtitle'}, ['บีบอัดเรียบร้อย']),
+            el('div', {class:'rsub'}, [`${fmtBytes(srcFile.size)} → ${fmtBytes(bytes.length)}` + (pct>0?` (เล็กลง ${pct}%)`:'')]),
+          ]),
+        ]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', () => downloadBytes(bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-บีบอัด.pdf`, 'application/pdf'));
+        box.appendChild(dl);
+        resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['บีบอัดไม่สำเร็จ: ' + err.message]));
+      }
+    }
+  }
+});
+
+/* ===================== PDF -> JPG ===================== */
+registerTool({
+  id:'pdf2image', cat:'convert', icon:'pdf2image',
+  name:'PDF → รูปภาพ', desc:'แปลงแต่ละหน้าของ PDF เป็นไฟล์ JPG',
+  longDesc:'แปลงทุกหน้าในไฟล์ PDF ให้เป็นรูปภาพ JPG แยกไฟล์ ดาวน์โหลดได้ทีละหน้า',
+  render(container){
+    let srcFile=null;
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false,
+      label:'เลือกไฟล์ PDF ที่ต้องการแปลงเป็นรูป', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile = f;
+        await doConvert(await readAsArrayBuffer(f));
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const resultWrap = el('div');
+    container.appendChild(resultWrap);
+    async function doConvert(buf){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังแปลงไฟล์...']));
+      try{
+        const pdfjsDoc = await pdfjsFromBytes(new Uint8Array(buf));
+        const n = pdfjsDoc.numPages;
+        const outputs = [];
+        for(let i=1;i<=n;i++){
+          const canvas = await renderPageToCanvas(pdfjsDoc, i, 1200);
+          const url = canvas.toDataURL('image/jpeg', 0.9);
+          outputs.push({page:i, url});
+        }
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note'}, [`แปลงสำเร็จ ${n} หน้า — ดาวน์โหลดทีละหน้าด้านล่าง`]));
+        outputs.forEach(o => {
+          const box = el('div', {class:'result-box'}, [
+            el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [`หน้า ${o.page}`])]),
+          ]);
+          const dl = el('button', {class:'btn'}, ['ดาวน์โหลด JPG']);
+          dl.addEventListener('click', async () => {
+            const bytes = await fetchPngBytesFromDataUrl(o.url);
+            downloadBlob(new Blob([bytes], {type:'image/jpeg'}), `${srcFile.name.replace(/\.pdf$/i,'')}-หน้า${o.page}.jpg`);
+          });
+          box.appendChild(dl);
+          resultWrap.appendChild(box);
+        });
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['แปลงไฟล์ไม่สำเร็จ: ' + err.message]));
+      }
+    }
+  }
+});
+
+/* ===================== DOCX builder (no library) ===================== */
+const DocxLib = (() => {
+  const enc = new TextEncoder();
+  let crcTable = null;
+  function crc32(u8){
+    if(!crcTable){ crcTable = new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; crcTable[n]=c>>>0; } }
+    let c = 0xFFFFFFFF;
+    for(let i=0;i<u8.length;i++) c = crcTable[(c^u8[i])&255] ^ (c>>>8);
+    return (c^0xFFFFFFFF)>>>0;
+  }
+  function zip(files, type){ // files: [{name, data:Uint8Array}] stored (no compression)
+    const parts = [], central = []; let offset = 0;
+    const now = new Date();
+    const dosTime = (now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1);
+    const dosDate = ((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate();
+    for(const f of files){
+      const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true);
+      lh.setUint16(8,0,true); lh.setUint16(10,dosTime,true); lh.setUint16(12,dosDate,true);
+      lh.setUint32(14,crc,true); lh.setUint32(18,size,true); lh.setUint32(22,size,true);
+      lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+      parts.push(new Uint8Array(lh.buffer), name, f.data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true);
+      ch.setUint16(10,0,true); ch.setUint16(12,dosTime,true); ch.setUint16(14,dosDate,true);
+      ch.setUint32(16,crc,true); ch.setUint32(20,size,true); ch.setUint32(24,size,true);
+      ch.setUint16(28,name.length,true); ch.setUint32(42,offset,true);
+      central.push(new Uint8Array(ch.buffer), name);
+      offset += 30 + name.length + size;
+    }
+    let cdSize = 0; central.forEach(p => cdSize += p.length);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true);
+    end.setUint32(12,cdSize,true); end.setUint32(16,offset,true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)],
+      {type: type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  }
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+  const FONT = 'Tahoma';
+  function runXml(text, sz, bold){
+    const rpr = `<w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}" w:eastAsia="${FONT}"/>${bold?'<w:b/><w:bCs/>':''}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
+    const segs = text.split('\t'); let out = '';
+    segs.forEach((s,i) => { if(i>0) out += `<w:r>${rpr}<w:tab/></w:r>`; if(s) out += `<w:r>${rpr}<w:t xml:space="preserve">${esc(s)}</w:t></w:r>`; });
+    return out;
+  }
+  // blocks: {type:'p', text, sz, bold, pageBreakBefore, after} | {type:'img', rid, wEmu, hEmu, id, pageBreakBefore}
+  // opts: pageW, pageH (twips), margin (twips)
+  function build(blocks, images, opts){
+    const m = opts.margin;
+    let body = '';
+    for(const b of blocks){
+      if(b.type==='p'){
+        body += `<w:p><w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}<w:spacing w:before="0" w:after="${b.after??120}" w:line="${b.line??276}" w:lineRule="auto"/>${b.ind>8?`<w:ind w:left="${Math.min(6000,Math.round(b.ind*20))}"/>`:''}</w:pPr>${runXml(b.text,b.sz||28,b.bold)}</w:p>`;
+      } else if(b.type==='img'){
+        body += `<w:p><w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${b.wEmu}" cy="${b.hEmu}"/><wp:docPr id="${b.id}" name="Page ${b.id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${b.id}" name="page${b.id}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${b.rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${b.wEmu}" cy="${b.hEmu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+      }
+    }
+    const sect = `<w:sectPr><w:pgSz w:w="${opts.pageW}" w:h="${opts.pageH}"/><w:pgMar w:top="${m}" w:right="${m}" w:bottom="${m}" w:left="${m}" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>`;
+    const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}${sect}</w:body></w:document>`;
+    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}" w:eastAsia="${FONT}"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="en-US" w:bidi="th-TH"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+    let rels = `<Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`;
+    const files = [];
+    images.forEach(im => { rels += `<Relationship Id="${im.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${im.name}"/>`; files.push({name:'word/media/'+im.name, data:im.data}); });
+    const enc2 = s => enc.encode(s);
+    return zip([
+      {name:'[Content_Types].xml', data:enc2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`)},
+      {name:'_rels/.rels', data:enc2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`)},
+      {name:'word/document.xml', data:enc2(docXml)},
+      {name:'word/styles.xml', data:enc2(styles)},
+      {name:'word/_rels/document.xml.rels', data:enc2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`)},
+      ...files,
+    ]);
+  }
+  return {build, zip};
+})();
+
+/* Group pdf.js text items of one page into paragraphs */
+function pdfTextToParagraphs(items, pageH){
+  const isThai = ch => /[฀-๿]/.test(ch);
+  const lines = []; let cur = null;
+  for(const it of items){
+    if(!it.str && !it.hasEOL) continue;
+    const x = it.transform[4], y = it.transform[5];
+    const h = Math.abs(it.transform[3]) || it.height || 10;
+    if(!it.str.trim() && !cur) continue;
+    if(!cur || Math.abs(y - cur.y) > Math.max(h,cur.h)*0.45){
+      cur = {y, h, x0:x, endX:x, text:'', hs:[]};
+      lines.push(cur);
+    }
+    if(it.str){
+      const gap = x - cur.endX;
+      if(cur.text){
+        const last = cur.text.slice(-1), first = it.str[0];
+        if(gap > h*1.8) cur.text += '\t';
+        else if(gap > h*0.18 && !isThai(last) && !isThai(first) && !/\s$/.test(cur.text) && !/^\s/.test(it.str)) cur.text += ' ';
+      }
+      cur.text += it.str; cur.hs.push(h*it.str.length);
+      cur.endX = Math.max(cur.endX, x + (it.width||0));
+      cur.h = h;
+    }
+  }
+  const ls = lines.filter(l => l.text.trim());
+  if(!ls.length) return [];
+  const maxEnd = Math.max(...ls.map(l=>l.endX)), minX = Math.min(...ls.map(l=>l.x0));
+  const paras = [];
+  let p = null, prev = null;
+  for(const l of ls){
+    const sz = Math.max(16, Math.min(96, Math.round(l.h*2*0.98)));
+    const gap = prev ? (prev.y - l.y) : 0;
+    const wrapped = prev && gap > 0 && gap < l.h*1.7 && prev.endX > minX + (maxEnd-minX)*0.82 && !prev.text.includes('\t') && Math.abs(prev.h - l.h) < 1.5 && Math.abs(l.x0 - prev.x0) < l.h*3;
+    if(wrapped && p){
+      const j = (isThai(p.text.slice(-1)) || isThai(l.text[0])) ? '' : ' ';
+      p.text += j + l.text.trim();
+    } else {
+      const indent = Math.max(0, Math.round(l.x0 - minX));
+      p = {type:'p', text: l.text.replace(/\s+$/,''), sz, after: prev && gap > l.h*2.2 ? 240 : 80, ind: indent};
+      paras.push(p);
+    }
+    prev = l;
+  }
+  return paras;
+}
+
+/* ===================== PDF → Word ===================== */
+registerTool({
+  id:'pdf2word', cat:'convert', icon:'pdf2word',
+  name:'PDF → Word', desc:'แปลง PDF เป็นไฟล์ Word (.docx)',
+  longDesc:'แปลงไฟล์ PDF เป็นเอกสาร Word ทำงานในเครื่องคุณทั้งหมด ไม่อัปโหลดไฟล์ไปไหน โหมด "ข้อความ" ดึงตัวหนังสือมาให้แก้ไขได้ (ใช้กับ PDF ที่พิมพ์/สร้างจากคอมพิวเตอร์) ส่วนโหมด "รูปหน้า" ใส่แต่ละหน้าเป็นรูปภาพเหมือนต้นฉบับ (ใช้กับ PDF ที่สแกนมา)',
+  render(container){
+    let mode = 'text', srcFile = null, buf = null;
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false,
+      label:'เลือกไฟล์ PDF ที่ต้องการแปลงเป็น Word', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile = f; buf = await readAsArrayBuffer(f); drawUI();
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div'); container.appendChild(formWrap);
+    const resultWrap = el('div'); container.appendChild(resultWrap);
+
+    function drawUI(){
+      formWrap.innerHTML = ''; resultWrap.innerHTML = '';
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, [`ไฟล์: ${srcFile.name} (${fmtBytes(srcFile.size)})`]));
+      const sel = el('select', {}, [
+        el('option', {value:'text'}, ['ข้อความ — แก้ไขได้ (PDF ที่ไม่ใช่ไฟล์สแกน)']),
+        el('option', {value:'image'}, ['รูปหน้า — เหมือนต้นฉบับ (ไฟล์สแกน)']),
+      ]);
+      sel.value = mode;
+      sel.addEventListener('change', () => { mode = sel.value; });
+      card.appendChild(el('div', {class:'field'}, [el('label', {}, ['โหมดการแปลง']), sel]));
+      card.appendChild(el('div', {class:'note'}, ['หมายเหตุ: ไฟล์สแกนไม่มีตัวหนังสือจริง จึงแปลงเป็นข้อความที่แก้ไขได้ไม่ได้ (ไม่มี OCR) ให้ใช้โหมดรูปหน้าแทน ตารางและการจัดหน้าซับซ้อนอาจไม่เหมือนต้นฉบับ 100%']));
+      const go = el('button', {class:'btn block'}, ['แปลงเป็น Word']);
+      go.addEventListener('click', doConvert);
+      card.appendChild(go);
+      formWrap.appendChild(card);
+    }
+    async function doConvert(){
+      resultWrap.innerHTML = '';
+      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังแปลงไฟล์...']);
+      resultWrap.appendChild(status);
+      try{
+        const doc = await pdfjsFromBytes(new Uint8Array(buf));
+        const n = doc.numPages;
+        const p1 = await doc.getPage(1); const v1 = p1.getViewport({scale:1});
+        const blocks = [], images = [];
+        let opts, textChars = 0;
+        if(mode==='text'){
+          opts = {pageW: Math.round(v1.width*20), pageH: Math.round(v1.height*20), margin: 1134};
+          for(let i=1;i<=n;i++){
+            status.lastChild.textContent = `กำลังอ่านหน้า ${i}/${n}...`;
+            const page = await doc.getPage(i);
+            const tc = await page.getTextContent();
+            const paras = pdfTextToParagraphs(tc.items, page.getViewport({scale:1}).height);
+            paras.forEach((p,k) => { if(i>1 && k===0) p.pageBreakBefore = true; textChars += p.text.length; blocks.push(p); });
+            if(paras.length===0 && i>1) blocks.push({type:'p', text:'', pageBreakBefore:true, sz:20});
+          }
+          if(textChars < 5){
+            resultWrap.innerHTML = '';
+            resultWrap.appendChild(el('div', {class:'note warn'}, ['ไม่พบตัวหนังสือในไฟล์นี้ — น่าจะเป็นไฟล์สแกน กรุณาเลือกโหมด "รูปหน้า" แล้วลองใหม่']));
+            return;
+          }
+        } else {
+          opts = {pageW: Math.round(v1.width*20), pageH: Math.round(v1.height*20), margin: 0};
+          for(let i=1;i<=n;i++){
+            status.lastChild.textContent = `กำลังสร้างรูปหน้า ${i}/${n}...`;
+            const canvas = await renderPageToCanvas(doc, i, 1400);
+            const url = canvas.toDataURL('image/jpeg', 0.85);
+            const data = await fetchPngBytesFromDataUrl(url);
+            const page = await doc.getPage(i); const v = page.getViewport({scale:1});
+            const rid = 'rIdImg'+i;
+            images.push({rid, name:`page${i}.jpg`, data});
+            // fit within the page, slightly smaller so no blank trailing page
+            const k = Math.min((v1.width*0.995)/v.width, (v1.height*0.985)/v.height);
+            blocks.push({type:'img', rid, id:i, wEmu:Math.round(v.width*k*12700), hEmu:Math.round(v.height*k*12700), pageBreakBefore: i>1});
+          }
+        }
+        status.lastChild.textContent = 'กำลังสร้างไฟล์ Word...';
+        const blob = DocxLib.build(blocks, images, opts);
+        const outName = srcFile.name.replace(/\.pdf$/i,'') + '.docx';
+        resultWrap.innerHTML = '';
+        const box = el('div', {class:'result-box'}, [
+          el('div', {class:'rtext'}, [
+            el('div', {class:'rtitle'}, [outName]),
+            el('div', {class:'rsub'}, [`${n} หน้า • ${fmtBytes(blob.size)}` + (mode==='text' ? ` • ${textChars.toLocaleString()} ตัวอักษร` : ' • แบบรูปหน้า')]),
+          ]),
+        ]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด .docx']);
+        dl.addEventListener('click', () => downloadBlob(blob, outName));
+        box.appendChild(dl);
+        resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['แปลงไฟล์ไม่สำเร็จ: ' + err.message]));
+      }
+    }
+  }
+});
+
+/* ===================== Lazy script loader ===================== */
+const _scriptLoads = {};
+function loadScriptOnce(url){
+  if(!_scriptLoads[url]) _scriptLoads[url] = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = url; s.async = true;
+    s.onload = () => res(); s.onerror = () => { delete _scriptLoads[url]; rej(new Error('โหลดไลบรารีไม่สำเร็จ (ครั้งแรกต้องต่ออินเทอร์เน็ต)')); };
+    document.head.appendChild(s);
+  });
+  return _scriptLoads[url];
+}
+const LIBS = {
+  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js',
+  xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  html2canvas: 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+};
+
+/* ===================== OCR อ่านตัวหนังสือจากภาพ/ไฟล์สแกน ===================== */
+registerTool({
+  id:'ocr', cat:'convert', icon:'ocr',
+  name:'OCR อ่านข้อความจากไฟล์สแกน', desc:'ดึงตัวหนังสือไทย/อังกฤษจาก PDF สแกนหรือรูปถ่าย เป็น Word หรือ PDF ที่ค้นหาได้',
+  longDesc:'อ่านตัวหนังสือจากเอกสารที่สแกนหรือถ่ายรูปมา (ภาษาไทยและอังกฤษ) แล้วได้เป็นข้อความที่คัดลอกได้ ไฟล์ Word หรือ PDF ที่ค้นหาคำได้ ทำงานในเครื่องทั้งหมด ครั้งแรกต้องต่ออินเทอร์เน็ตเพื่อโหลดตัวอ่านและข้อมูลภาษา (ประมาณ 5–10 MB) ครั้งต่อไปจะเร็วขึ้นเพราะเก็บไว้ในเครื่องแล้ว อ่านตัวพิมพ์ได้ดี แต่ลายมือเขียนอ่านไม่ได้',
+  render(container){
+    let files = [], lang = 'tha+eng', makePdf = true;
+    const dz = buildDropzone({accept:'application/pdf,image/*', multiple:true, label:'เลือกไฟล์ PDF สแกน หรือรูปถ่ายเอกสาร (เลือกรูปได้หลายรูป)', sub:'เลือกไฟล์',
+      onFiles: (fs) => { files = files.concat(fs); drawUI(); }});
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div'), resultWrap = el('div');
+    container.appendChild(formWrap); container.appendChild(resultWrap);
+    function drawUI(){
+      formWrap.innerHTML = ''; resultWrap.innerHTML = '';
+      if(!files.length) return;
+      const card = el('div', {class:'card'});
+      const list = el('div', {class:'filelist'});
+      files.forEach((f,i) => { const rm = el('button', {class:'iconbtn', html:ICONS.close}); rm.addEventListener('click', () => { files.splice(i,1); drawUI(); });
+        list.appendChild(el('div', {class:'file-item'}, [el('span', {class:'fname'}, [f.name]), el('span', {class:'fsize'}, [fmtBytes(f.size)]), rm])); });
+      card.appendChild(list);
+      const sel = el('select', {}, [el('option', {value:'tha+eng'}, ['ไทย + อังกฤษ']), el('option', {value:'eng'}, ['อังกฤษอย่างเดียว (เร็วกว่า)'])]);
+      sel.value = lang; sel.addEventListener('change', () => lang = sel.value);
+      card.appendChild(el('div', {class:'field'}, [el('label', {}, ['ภาษาในเอกสาร']), sel]));
+      const cb = el('input', {type:'checkbox'}); cb.checked = makePdf; cb.addEventListener('change', () => makePdf = cb.checked);
+      card.appendChild(el('label', {style:'display:flex;gap:8px;align-items:center;margin:0 0 12px;font-size:14px;'}, [cb, 'สร้าง PDF ที่ค้นหาคำได้ด้วย (ช้าขึ้นเล็กน้อย)']));
+      const go = el('button', {class:'btn block'}, ['เริ่มอ่านข้อความ']);
+      go.addEventListener('click', run);
+      card.appendChild(go);
+      formWrap.appendChild(card);
+    }
+    async function collectImages(status){
+      const imgs = []; // {canvas, wPt, hPt}
+      for(const f of files){
+        if(/pdf$/i.test(f.type) || /\.pdf$/i.test(f.name)){
+          const d = await pdfjsFromBytes(new Uint8Array(await readAsArrayBuffer(f)));
+          for(let i=1;i<=d.numPages;i++){
+            status(`กำลังเตรียมหน้า ${i}/${d.numPages} ของ ${f.name}`);
+            const p = await d.getPage(i), v = p.getViewport({scale:1});
+            const c = await renderPageToCanvas(d, i, Math.min(2400, Math.max(1600, v.width*300/72)));
+            imgs.push({canvas:c, wPt:v.width, hPt:v.height});
+          }
+        } else {
+          const im = await loadImage(await readAsDataURL(f));
+          const k = Math.min(1, 2600 / Math.max(im.width, im.height));
+          const c = document.createElement('canvas'); c.width = Math.round(im.width*k); c.height = Math.round(im.height*k);
+          const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im, 0, 0, c.width, c.height);
+          // fit photo onto A4-ish page width 595pt
+          imgs.push({canvas:c, wPt:595, hPt:595*c.height/c.width});
+        }
+      }
+      return imgs;
+    }
+    async function run(){
+      resultWrap.innerHTML = '';
+      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), el('span', {}, ['กำลังโหลดตัวอ่านข้อความ...'])]);
+      const bar = el('div', {style:'height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:8px;'}, [el('div', {style:'height:100%;width:0;background:var(--teal);transition:width .2s;'})]);
+      status.appendChild(bar);
+      resultWrap.appendChild(status);
+      const say = t => status.children[1].textContent = t;
+      const prog = p => bar.firstChild.style.width = Math.round(p*100) + '%';
+      let worker = null;
+      try{
+        await loadScriptOnce(LIBS.tesseract);
+        const imgs = await collectImages(say);
+        let pageNo = 0;
+        say('กำลังโหลดข้อมูลภาษา (ครั้งแรกอาจใช้เวลาสักครู่)...');
+        worker = await Tesseract.createWorker(lang.split('+'), 1, {
+          logger: m => { if(m.status === 'recognizing text') { say(`กำลังอ่านหน้า ${pageNo}/${imgs.length}...`); prog(((pageNo-1) + m.progress)/imgs.length); }
+                         else if(/loading|initializ/.test(m.status) && m.progress != null) prog(m.progress); },
+        });
+        await worker.setParameters({preserve_interword_spaces: '1'});
+        const pagesText = [], pdfParts = [];
+        for(const im of imgs){
+          pageNo++;
+          const {data} = await worker.recognize(im.canvas, {}, {text:true, blocks:true, pdf:makePdf});
+          let t = (data.text || '');
+          // rebuild from lines, dropping low-confidence noise (e.g. stray vowel marks read as a separate line)
+          if(data.blocks && data.blocks.length){
+            const confs = []; data.blocks.forEach(b => (b.paragraphs||[]).forEach(p => (p.lines||[]).forEach(l => confs.push(l.confidence))));
+            confs.sort((a,b) => a-b);
+            const cut = Math.max(45, (confs[Math.floor(confs.length/2)] || 0) - 30);
+            const bl = data.blocks.map(b => (b.paragraphs||[]).map(p => (p.lines||[])
+              .filter(l => l.confidence >= cut || (l.confidence >= 30 && l.text.replace(/\s/g,'').length > 12))
+              .map(l => l.text.replace(/\s+$/,'')).join('\n')).filter(Boolean).join('\n\n')).filter(Boolean);
+            if(bl.join('').replace(/\s/g,'').length > 0) t = bl.join('\n\n');
+          }
+          t = t.replace(/\u0E4D\u0E32/g, '\u0E33');
+          pagesText.push(t.trim());
+          if(makePdf && data.pdf) pdfParts.push({bytes: new Uint8Array(data.pdf), wPt: im.wPt, hPt: im.hPt});
+        }
+        await worker.terminate(); worker = null;
+        prog(1);
+        const base = (files.length === 1 ? files[0].name.replace(/\.\w+$/, '') : 'OCR-' + niceDate());
+        const fullText = pagesText.join('\n\n');
+        resultWrap.innerHTML = '';
+        if(!fullText.replace(/\s/g,'')){ resultWrap.appendChild(el('div', {class:'note warn'}, ['อ่านไม่พบตัวหนังสือ ลองใช้รูปที่ชัดขึ้น หรือถ่ายให้ตรงและสว่างกว่านี้'])); return; }
+        const ta = el('textarea', {style:'width:100%;min-height:220px;font-family:inherit;font-size:14px;padding:10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box;'});
+        ta.value = fullText;
+        const card = el('div', {class:'card'}, [el('div', {class:'note'}, [`อ่านได้ ${fullText.replace(/\s/g,'').length.toLocaleString()} ตัวอักษร จาก ${pagesText.length} หน้า — ตรวจทานและแก้คำผิดในกล่องนี้ได้ก่อนดาวน์โหลด`]), ta]);
+        const row = el('div', {class:'row', style:'margin-top:10px;'});
+        const cp = el('button', {class:'btn secondary'}, ['คัดลอกข้อความ']);
+        cp.addEventListener('click', async () => { try{ await navigator.clipboard.writeText(ta.value); toast('คัดลอกแล้ว'); }catch(e){ ta.select(); document.execCommand('copy'); toast('คัดลอกแล้ว'); } });
+        const dw = el('button', {class:'btn'}, ['ดาวน์โหลด Word']);
+        dw.addEventListener('click', () => {
+          const blocks = [];
+          ta.value.split(/\n{2,}/).forEach(p => { if(p.trim()) blocks.push({type:'p', text:p.replace(/\n/g, ' ').replace(/ {2,}/g,' ').trim(), sz:28, after:160}); });
+          downloadBlob(DocxLib.build(blocks, [], {pageW:11906, pageH:16838, margin:1134}), base + '-OCR.docx');
+        });
+        const dt = el('button', {class:'btn secondary'}, ['ดาวน์โหลด .txt']);
+        dt.addEventListener('click', () => downloadBlob(new Blob(['﻿' + ta.value], {type:'text/plain;charset=utf-8'}), base + '-OCR.txt'));
+        row.append(dw, cp, dt);
+        card.appendChild(row);
+        resultWrap.appendChild(card);
+        if(pdfParts.length){
+          const out = await PDFLib.PDFDocument.create();
+          for(const part of pdfParts){
+            const [emb] = await out.embedPdf(part.bytes, [0]);
+            const p = out.addPage([part.wPt, part.hPt]);
+            p.drawPage(emb, {x:0, y:0, width:part.wPt, height:part.hPt});
+          }
+          const bytes = await out.save();
+          const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [base + '-ค้นหาได้.pdf']), el('div', {class:'rsub'}, [`${fmtBytes(bytes.length)} • หน้าตาเหมือนเดิม แต่ค้นหา/คัดลอกคำได้`])])]);
+          const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+          dl.addEventListener('click', () => downloadBytes(bytes, base + '-ค้นหาได้.pdf', 'application/pdf'));
+          box.appendChild(dl); resultWrap.appendChild(box);
+        }
+      }catch(err){
+        console.error(err); if(worker) try{ await worker.terminate(); }catch(e){}
+        resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['อ่านข้อความไม่สำเร็จ: ' + (err.message || err)]));
+      }
+    }
+  }
+});
+
+/* ===================== Word / Excel → PDF ===================== */
+registerTool({
+  id:'office2pdf', cat:'convert', icon:'office2pdf',
+  name:'Word / Excel → PDF', desc:'แปลงไฟล์ .docx .xlsx .xls .csv เป็น PDF',
+  longDesc:'แปลงเอกสาร Word (.docx) หรือตาราง Excel (.xlsx .xls .csv) เป็นไฟล์ PDF ในเครื่อง เหมาะกับเอกสารทั่วไป ข้อความ ตาราง และรูปภาพ แต่หัว/ท้ายกระดาษ กล่องข้อความ และการจัดหน้าซับซ้อนอาจไม่เหมือนใน Office 100% (ครั้งแรกต้องต่ออินเทอร์เน็ตเพื่อโหลดตัวแปลง)',
+  render(container){
+    let srcFile = null, orient = 'portrait', sheetsSel = null, wb = null, docHtml = null;
+    const dz = buildDropzone({accept:'.docx,.xlsx,.xls,.csv,.ods,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv', multiple:false,
+      label:'เลือกไฟล์ Word (.docx) หรือ Excel (.xlsx / .xls / .csv)', sub:'เลือกไฟล์',
+      onFiles: async (fs) => { srcFile = fs[0]; await load(); }});
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div'), resultWrap = el('div');
+    container.appendChild(formWrap); container.appendChild(resultWrap);
+    const isWord = () => /\.docx$/i.test(srcFile.name);
+    async function load(){
+      formWrap.innerHTML = ''; resultWrap.innerHTML = ''; wb = null; docHtml = null;
+      formWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังเปิดไฟล์...']));
+      try{
+        const buf = await readAsArrayBuffer(srcFile);
+        if(isWord()){
+          if(/\.doc$/i.test(srcFile.name)) throw new Error('รองรับเฉพาะ .docx (ไฟล์ .doc แบบเก่าให้ Save As เป็น .docx ก่อน)');
+          await loadScriptOnce(LIBS.mammoth);
+          const r = await mammoth.convertToHtml({arrayBuffer: buf}, {includeDefaultStyleMap:true});
+          docHtml = r.value; orient = 'portrait';
+        } else {
+          await loadScriptOnce(LIBS.xlsx);
+          wb = XLSX.read(buf, {type:'array', cellStyles:false, cellDates:true});
+          sheetsSel = new Set(wb.SheetNames.slice(0,1).concat(wb.SheetNames.length <= 5 ? wb.SheetNames : []));
+          orient = 'landscape';
+        }
+        drawUI();
+      }catch(err){ console.error(err); formWrap.innerHTML = ''; formWrap.appendChild(el('div', {class:'note warn'}, ['เปิดไฟล์ไม่สำเร็จ: ' + err.message])); }
+    }
+    let preview = null;
+    function buildContent(){
+      const pageWpx = orient === 'portrait' ? 794 : 1123, pad = 57;
+      const wrap = el('div', {class:'o2p-doc', style:`width:${pageWpx}px;padding:${pad}px;box-sizing:border-box;background:#fff;color:#000;font-family:Sarabun,'Noto Sans Thai',Tahoma,sans-serif;font-size:15px;line-height:1.5;`});
+      if(docHtml != null){ wrap.innerHTML = docHtml; }
+      else {
+        wb.SheetNames.filter(n => sheetsSel.has(n)).forEach((n, i) => {
+          if(sheetsSel.size > 1) wrap.appendChild(el('div', {style:`font-weight:700;font-size:16px;margin:${i?'26px':'0'} 0 8px;`}, [n]));
+          const holder = el('div'); holder.innerHTML = XLSX.utils.sheet_to_html(wb.Sheets[n], {header:'', footer:''});
+          const t = holder.querySelector('table'); if(t) wrap.appendChild(t);
+        });
+      }
+      return wrap;
+    }
+    const docCss = `.o2p-doc img{max-width:100%;height:auto}.o2p-doc table{border-collapse:collapse;margin:6px 0}.o2p-doc td,.o2p-doc th{border:1px solid #9a9a9a;padding:3px 6px;vertical-align:top;white-space:nowrap}.o2p-doc p{margin:0 0 8px}.o2p-doc h1{font-size:24px;margin:10px 0}.o2p-doc h2{font-size:20px;margin:10px 0}.o2p-doc h3{font-size:17px}`;
+    function fitTables(wrap){
+      const avail = wrap.clientWidth - 114;
+      wrap.querySelectorAll('table').forEach(t => {
+        let fs = 15; t.style.fontSize = fs + 'px';
+        while(t.scrollWidth > avail && fs > 6){ fs -= 0.5; t.style.fontSize = fs + 'px'; }
+        if(t.scrollWidth > avail) t.querySelectorAll('td,th').forEach(c => { c.style.whiteSpace = 'normal'; });
+      });
+    }
+    function drawUI(){
+      formWrap.innerHTML = ''; resultWrap.innerHTML = '';
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, [`ไฟล์: ${srcFile.name}`]));
+      if(wb && wb.SheetNames.length > 1){
+        const box = el('div', {class:'field'}, [el('label', {}, ['ชีตที่จะแปลง'])]);
+        wb.SheetNames.forEach(n => { const c = el('input', {type:'checkbox'}); c.checked = sheetsSel.has(n);
+          c.addEventListener('change', () => { c.checked ? sheetsSel.add(n) : sheetsSel.delete(n); renderPreview(); });
+          box.appendChild(el('label', {style:'display:flex;gap:8px;align-items:center;font-weight:normal;margin:4px 0;'}, [c, n])); });
+        card.appendChild(box);
+      }
+      const seg = el('div', {class:'seg', style:'margin-bottom:12px;'});
+      [['portrait','แนวตั้ง A4'],['landscape','แนวนอน A4']].forEach(([v,l]) => { const b = el('button', {type:'button', class: orient===v?'active':''}, [l]);
+        b.addEventListener('click', () => { orient = v; drawUI(); }); seg.appendChild(b); });
+      card.appendChild(seg);
+      card.appendChild(el('div', {class:'note'}, ['ตัวอย่าง (เลื่อนดูได้):']));
+      preview = el('div', {style:'overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:8px;background:#e9e7e1;padding:8px;'});
+      card.appendChild(preview);
+      formWrap.appendChild(card);
+      const go = el('button', {class:'btn block'}, ['แปลงเป็น PDF']);
+      go.addEventListener('click', convert);
+      const pr = el('button', {class:'btn block secondary', style:'margin-top:8px;'}, ['พิมพ์ / บันทึกเป็น PDF ผ่านเครื่องพิมพ์ (ตัวหนังสือคมชัดที่สุด)']);
+      pr.addEventListener('click', printIt);
+      formWrap.append(go, pr);
+      renderPreview();
+    }
+    function renderPreview(){
+      preview.innerHTML = '';
+      preview.appendChild(el('style', {}, [docCss]));
+      const c = buildContent(); preview.appendChild(c); fitTables(c);
+    }
+    async function convert(){
+      resultWrap.innerHTML = '';
+      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), el('span', {}, ['กำลังแปลง...'])]);
+      resultWrap.appendChild(status);
+      // render in a full-size off-screen host (not clipped/scrolled)
+      const host = el('div', {style:'position:absolute;left:0;top:0;z-index:-1;pointer-events:none;'});
+      host.appendChild(el('style', {}, [docCss]));
+      const docEl = buildContent(); host.appendChild(docEl);
+      document.body.appendChild(host);
+      try{
+        await loadScriptOnce(LIBS.html2canvas);
+        try{ await document.fonts.ready; }catch(e){}
+        await Promise.all(Array.from(docEl.querySelectorAll('img')).map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+        fitTables(docEl);
+        const W = docEl.offsetWidth, pageH = Math.round(W * (orient==='portrait' ? 842/595 : 595/842));
+        const pad = 57, bodyH = pageH - pad*2;
+        const total = docEl.scrollHeight - pad*2;
+        // candidate break points: bottoms of block-level things (relative to content top)
+        const top0 = docEl.getBoundingClientRect().top + pad;
+        const cands = new Set();
+        docEl.querySelectorAll('p,li,tr,h1,h2,h3,h4,h5,h6,img,table,div,br').forEach(n => { const r = n.getBoundingClientRect(); if(r.height) cands.add(Math.round(r.bottom - top0)); });
+        const sorted = [...cands].filter(v => v > 0).sort((a,b) => a-b);
+        const breaks = [0];
+        while(breaks[breaks.length-1] + bodyH < total){
+          const s = breaks[breaks.length-1], lim = s + bodyH;
+          let best = null; for(const v of sorted){ if(v > s + bodyH*0.35 && v <= lim) best = v; }
+          breaks.push(best || lim);
+        }
+        breaks.push(total);
+        const out = await PDFLib.PDFDocument.create();
+        const pw = orient==='portrait' ? 595.28 : 841.89, ph = orient==='portrait' ? 841.89 : 595.28, k = pw / W;
+        const scale = Math.min(2, (window.devicePixelRatio||1) * 1.5);
+        const docRect = docEl.getBoundingClientRect();
+        for(let i=0;i<breaks.length-1;i++){
+          status.children[1].textContent = `กำลังสร้างหน้า ${i+1}/${breaks.length-1}...`;
+          const y0 = breaks[i], h = breaks[i+1] - breaks[i];
+          if(h <= 2) continue;
+          const canvas = await html2canvas(docEl, {scale, backgroundColor:'#ffffff', useCORS:true, logging:false,
+            x: docRect.left + window.scrollX + pad, y: docRect.top + window.scrollY + pad + y0, width: W - pad*2, height: h,
+            windowWidth: Math.max(document.documentElement.clientWidth, W + 20)});
+          const jpg = await out.embedJpg(await fetchPngBytesFromDataUrl(canvas.toDataURL('image/jpeg', 0.92)));
+          const page = out.addPage([pw, ph]);
+          page.drawImage(jpg, {x: pad*k, y: ph - pad*k - h*k, width: (W - pad*2)*k, height: h*k});
+        }
+        const bytes = await out.save();
+        const name = srcFile.name.replace(/\.\w+$/, '') + '.pdf';
+        resultWrap.innerHTML = '';
+        const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [name]), el('div', {class:'rsub'}, [`${out.getPageCount()} หน้า • ${fmtBytes(bytes.length)}`])])]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', () => downloadBytes(bytes, name, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+        resultWrap.appendChild(el('div', {class:'note'}, ['ไฟล์นี้เก็บหน้าเป็นภาพ (ค้นหาคำไม่ได้) ถ้าต้องการให้คัดลอกข้อความได้ ให้ใช้ปุ่ม "พิมพ์ / บันทึกเป็น PDF"']));
+      }catch(err){ console.error(err); resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['แปลงไม่สำเร็จ: ' + err.message])); }
+      finally{ host.remove(); }
+    }
+    function printIt(){
+      const c = buildContent();
+      const ifr = el('iframe', {style:'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'});
+      document.body.appendChild(ifr);
+      const d = ifr.contentDocument;
+      d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>${srcFile.name.replace(/\.\w+$/, '')}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet"><style>@page{size:A4 ${orient};margin:15mm}body{margin:0}${docCss}.o2p-doc{width:auto!important;padding:0!important}tr,img{page-break-inside:avoid}</style></head><body></body></html>`); d.close();
+      d.body.appendChild(d.importNode(c, true));
+      const go = () => { try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){ toast('เปิดหน้าพิมพ์ไม่ได้', true); } setTimeout(() => ifr.remove(), 60000); };
+      (d.fonts ? d.fonts.ready : Promise.resolve()).then(() => setTimeout(go, 300));
+    }
+  }
+});
+
+/* ===================== ลดขนาดไฟล์ภาพ ===================== */
+registerTool({
+  id:'imgshrink', cat:'convert', icon:'imgshrink',
+  name:'ลดขนาดไฟล์ภาพ', desc:'บีบอัด JPG/PNG ให้ไฟล์เล็กลงโดยยังดูดีอยู่',
+  longDesc:'เลือกรูปภาพที่ไฟล์ใหญ่เกินไป ปรับความกว้างสูงสุดและคุณภาพ แล้วดาวน์โหลดไฟล์ที่เล็กลง',
+  render(container){
+    let items = [];
+    let maxWidth = 1600, quality = 0.75;
+    const dz = buildDropzone({
+      accept:'image/*', multiple:true,
+      label:'เลือกรูปภาพที่ต้องการบีบอัด (เลือกได้หลายไฟล์)', sub:'เลือกรูปภาพ',
+      onFiles: async (files) => {
+        for(const f of files){ items.push({file:f, name:f.name, size:f.size}); }
+        drawUI();
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div'); container.appendChild(formWrap);
+    const resultWrap = el('div'); container.appendChild(resultWrap);
+
+    function drawUI(){
+      formWrap.innerHTML = '';
+      resultWrap.innerHTML = '';
+      if(items.length===0) return;
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, [`เลือกไว้ ${items.length} ไฟล์`]));
+      const wField = el('div', {class:'field'}, [
+        el('label', {}, [`ความกว้างสูงสุด: ${maxWidth}px`]),
+        el('input', {type:'range', min:'600', max:'2400', step:'100', value:String(maxWidth)}),
+      ]);
+      wField.querySelector('input').addEventListener('input', e => { maxWidth = +e.target.value; wField.querySelector('label').textContent = `ความกว้างสูงสุด: ${maxWidth}px`; });
+      const qField = el('div', {class:'field'}, [
+        el('label', {}, [`คุณภาพ: ${Math.round(quality*100)}%`]),
+        el('input', {type:'range', min:'30', max:'95', step:'5', value:String(Math.round(quality*100))}),
+      ]);
+      qField.querySelector('input').addEventListener('input', e => { quality = (+e.target.value)/100; qField.querySelector('label').textContent = `คุณภาพ: ${Math.round(quality*100)}%`; });
+      card.appendChild(wField); card.appendChild(qField);
+      const goBtn = el('button', {class:'btn block'}, ['บีบอัดรูปภาพ']);
+      goBtn.addEventListener('click', doShrink);
+      card.appendChild(goBtn);
+      formWrap.appendChild(card);
+    }
+    async function doShrink(){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังบีบอัด...']));
+      const outputs = [];
+      for(const it of items){
+        const dataUrl = await readAsDataURL(it.file);
+        const img = await loadImage(dataUrl);
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const url = canvas.toDataURL('image/jpeg', quality);
+        const bytes = await fetchPngBytesFromDataUrl(url);
+        outputs.push({name: it.name.replace(/\.\w+$/, '') + '.jpg', bytes, before: it.size});
+      }
+      resultWrap.innerHTML = '';
+      outputs.forEach(o => {
+        const pct = Math.round((1 - o.bytes.length/o.before)*100);
+        const box = el('div', {class:'result-box'}, [
+          el('div', {class:'rtext'}, [
+            el('div', {class:'rtitle'}, [o.name]),
+            el('div', {class:'rsub'}, [`${fmtBytes(o.before)} → ${fmtBytes(o.bytes.length)}` + (pct>0?` (เล็กลง ${pct}%)`:'')]),
+          ]),
+        ]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด']);
+        dl.addEventListener('click', () => downloadBlob(new Blob([o.bytes], {type:'image/jpeg'}), o.name));
+        box.appendChild(dl);
+        resultWrap.appendChild(box);
+      });
+    }
+  }
+});
+/* ===================== ใส่เลขหน้า PDF ===================== */
+registerTool({
+  id:'pagenum', cat:'mark', icon:'pagenum',
+  name:'ใส่เลขหน้า PDF', desc:'เพิ่มเลขกำกับทุกหน้า เลือกตำแหน่งและรูปแบบได้',
+  longDesc:'เพิ่มเลขหน้าให้ทุกหน้าในเอกสาร เลือกตำแหน่ง รูปแบบ และเลขเริ่มต้นได้',
+  render(container){
+    let srcFile=null, srcBuf=null, pageCount=0;
+    let position='br', fmt='n', startAt=1, fontPx=13;
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false,
+      label:'เลือกไฟล์ PDF', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile = f; srcBuf = await readAsArrayBuffer(f);
+        const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        pageCount = doc.getPageCount();
+        drawForm();
+      }
+    });
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div'); container.appendChild(formWrap);
+    const resultWrap = el('div'); container.appendChild(resultWrap);
+
+    function drawForm(){
+      resultWrap.innerHTML=''; formWrap.innerHTML='';
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, [`ไฟล์ "${srcFile.name}" · ${pageCount} หน้า`]));
+      const posField = el('div', {class:'field'}, [el('label',{},['ตำแหน่ง'])]);
+      const posSeg = el('div', {class:'seg'});
+      [['bl','ล่างซ้าย'],['bc','ล่างกลาง'],['br','ล่างขวา'],['tr','บนขวา']].forEach(([v,l])=>{
+        const b = el('button',{type:'button'},[l]); if(v===position)b.classList.add('active');
+        b.addEventListener('click', ()=>{position=v; $$('button',posSeg).forEach(x=>x.classList.remove('active')); b.classList.add('active');});
+        posSeg.appendChild(b);
+      });
+      posField.appendChild(posSeg); card.appendChild(posField);
+
+      const fmtField = el('div', {class:'field'}, [
+        el('label',{},['รูปแบบข้อความ']),
+        el('select', {}, [
+          el('option',{value:'n'},['1  (แสดงเฉพาะเลขหน้า)']),
+          el('option',{value:'n/total'},['1 / 10  (เลขหน้า/จำนวนหน้าทั้งหมด)']),
+          el('option',{value:'pagen'},['หน้า 1']),
+        ])
+      ]);
+      fmtField.querySelector('select').addEventListener('change', e=>fmt=e.target.value);
+      card.appendChild(fmtField);
+
+      const startField = el('div', {class:'field'}, [
+        el('label',{},['เริ่มนับจากเลข']),
+        el('input', {type:'number', value:'1', min:'0'}),
+      ]);
+      startField.querySelector('input').addEventListener('input', e=>startAt=parseInt(e.target.value||'1',10));
+      card.appendChild(startField);
+
+      const goBtn = el('button', {class:'btn block'}, ['ใส่เลขหน้า']);
+      goBtn.addEventListener('click', doApply);
+      card.appendChild(goBtn);
+      formWrap.appendChild(card);
+    }
+    async function doApply(){
+      resultWrap.innerHTML='';
+      resultWrap.appendChild(el('div',{class:'note'},[el('span',{class:'spinner'}),'กำลังใส่เลขหน้า...']));
+      try{
+        const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        const pages = doc.getPages();
+        for(let i=0;i<pages.length;i++){
+          const num = startAt + i;
+          let text = String(num);
+          if(fmt==='n/total') text = `${num} / ${pages.length}`;
+          if(fmt==='pagen') text = `หน้า ${num}`;
+          const {dataUrl, width, height} = textToImageDataURL(text, {fontPx, color:'#222222', opacity:1});
+          const pngBytes = await fetchPngBytesFromDataUrl(dataUrl);
+          const png = await doc.embedPng(pngBytes);
+          const {width:pw, height:ph} = pages[i].getSize();
+          const margin = 24;
+          let x,y;
+          if(position==='bl'){ x=margin; y=margin; }
+          else if(position==='bc'){ x=(pw-width)/2; y=margin; }
+          else if(position==='br'){ x=pw-width-margin; y=margin; }
+          else { x=pw-width-margin; y=ph-height-margin; }
+          pages[i].drawImage(png, {x,y,width,height});
+        }
+        const bytes = await doc.save();
+        resultWrap.innerHTML='';
+        const box = el('div',{class:'result-box'},[
+          el('div',{class:'rtext'},[el('div',{class:'rtitle'},['ใส่เลขหน้าเรียบร้อย']),el('div',{class:'rsub'},[fmtBytes(bytes.length)])]),
+        ]);
+        const dl = el('button',{class:'btn'},['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', ()=>downloadBytes(bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-เลขหน้า.pdf`, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML='';
+        resultWrap.appendChild(el('div',{class:'note warn'},['ใส่เลขหน้าไม่สำเร็จ: '+err.message]));
+      }
+    }
+  }
+});
+
+/* ===================== ใส่ลายน้ำ PDF ===================== */
+registerTool({
+  id:'watermark', cat:'mark', icon:'watermark',
+  name:'ใส่ลายน้ำ PDF', desc:'แปะข้อความจางๆ ทับทุกหน้า เช่น "สำเนา" หรือ "ฉบับร่าง"',
+  longDesc:'ใส่ข้อความลายน้ำแบบเอียงกึ่งโปร่งใสลงบนทุกหน้าของเอกสาร',
+  render(container){
+    let srcFile=null, srcBuf=null;
+    let text='สำเนา', opacity=0.25, size=64, rotateDeg=-40, color='#B0392F';
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => { const f=files[0]; if(!f) return; srcFile=f; srcBuf=await readAsArrayBuffer(f); drawForm(); }
+    });
+    container.appendChild(el('div',{class:'card'},[dz]));
+    const formWrap = el('div'); container.appendChild(formWrap);
+    const resultWrap = el('div'); container.appendChild(resultWrap);
+
+    function drawForm(){
+      resultWrap.innerHTML=''; formWrap.innerHTML='';
+      const card = el('div',{class:'card'});
+      const tField = el('div',{class:'field'},[el('label',{},['ข้อความลายน้ำ']), el('input',{type:'text', value:text})]);
+      tField.querySelector('input').addEventListener('input', e=>text=e.target.value);
+      card.appendChild(tField);
+      const oField = el('div',{class:'field'},[el('label',{},[`ความโปร่งใส: ${Math.round(opacity*100)}%`]), el('input',{type:'range',min:'5',max:'70',step:'5',value:String(opacity*100)})]);
+      oField.querySelector('input').addEventListener('input', e=>{opacity=(+e.target.value)/100; oField.querySelector('label').textContent=`ความโปร่งใส: ${Math.round(opacity*100)}%`;});
+      card.appendChild(oField);
+      const sField = el('div',{class:'field'},[el('label',{},[`ขนาดตัวอักษร: ${size}pt`]), el('input',{type:'range',min:'24',max:'120',step:'4',value:String(size)})]);
+      sField.querySelector('input').addEventListener('input', e=>{size=+e.target.value; sField.querySelector('label').textContent=`ขนาดตัวอักษร: ${size}pt`;});
+      card.appendChild(sField);
+      const rField = el('div',{class:'field'},[el('label',{},[`มุมเอียง: ${rotateDeg}°`]), el('input',{type:'range',min:'-90',max:'90',step:'5',value:String(rotateDeg)})]);
+      rField.querySelector('input').addEventListener('input', e=>{rotateDeg=+e.target.value; rField.querySelector('label').textContent=`มุมเอียง: ${rotateDeg}°`;});
+      card.appendChild(rField);
+      const cField = el('div',{class:'field'},[el('label',{},['สีข้อความ']), el('input',{type:'text',value:color,placeholder:'#B0392F'})]);
+      cField.querySelector('input').addEventListener('input', e=>color=e.target.value||'#B0392F');
+      card.appendChild(cField);
+      const goBtn = el('button',{class:'btn block'},['ใส่ลายน้ำ']);
+      goBtn.addEventListener('click', doApply);
+      card.appendChild(goBtn);
+      formWrap.appendChild(card);
+    }
+    async function doApply(){
+      resultWrap.innerHTML='';
+      resultWrap.appendChild(el('div',{class:'note'},[el('span',{class:'spinner'}),'กำลังใส่ลายน้ำ...']));
+      try{
+        const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        const {dataUrl, width, height} = textToImageDataURL(text, {fontPx:size, color, opacity, rotateDeg, weight:700});
+        const pngBytes = await fetchPngBytesFromDataUrl(dataUrl);
+        const png = await doc.embedPng(pngBytes);
+        for(const page of doc.getPages()){
+          const {width:pw, height:ph} = page.getSize();
+          const fit = fitInBox(width, height, pw*0.85, ph*0.85);
+          page.drawImage(png, {x:(pw-fit.width)/2, y:(ph-fit.height)/2, width:fit.width, height:fit.height, opacity:1});
+        }
+        const bytes = await doc.save();
+        resultWrap.innerHTML='';
+        const box = el('div',{class:'result-box'},[el('div',{class:'rtext'},[el('div',{class:'rtitle'},['ใส่ลายน้ำเรียบร้อย']),el('div',{class:'rsub'},[fmtBytes(bytes.length)])])]);
+        const dl = el('button',{class:'btn'},['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', ()=>downloadBytes(bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-ลายน้ำ.pdf`, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML='';
+        resultWrap.appendChild(el('div',{class:'note warn'},['ใส่ลายน้ำไม่สำเร็จ: '+err.message]));
+      }
+    }
+  }
+});
+
+/* ===================== ครอบตัดขอบ PDF ===================== */
+registerTool({
+  id:'crop', cat:'organize', icon:'crop',
+  name:'ครอบตัดขอบ PDF', desc:'ตัดขอบกระดาษที่ไม่ต้องการออกจากทุกหน้า',
+  longDesc:'ปรับระยะขอบที่ต้องการตัดออกจากทุกด้าน พร้อมดูตัวอย่างหน้าแรกก่อนบันทึก',
+  render(container){
+    let srcFile=null, srcBuf=null;
+    let margins = {top:5, bottom:5, left:5, right:5}; // percent
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => {
+        const f = files[0]; if(!f) return;
+        srcFile=f; srcBuf=await readAsArrayBuffer(f);
+        await drawForm();
+      }
+    });
+    container.appendChild(el('div',{class:'card'},[dz]));
+    const formWrap = el('div'); container.appendChild(formWrap);
+    const resultWrap = el('div'); container.appendChild(resultWrap);
+
+    async function drawForm(){
+      resultWrap.innerHTML=''; formWrap.innerHTML='';
+      const card = el('div',{class:'card'});
+      const pdfjsDoc = await pdfjsFromBytes(new Uint8Array(srcBuf));
+      const canvas = await renderPageToCanvas(pdfjsDoc, 1, 420);
+      const previewWrap = el('div', {style:'position:relative;display:inline-block;margin-bottom:14px;'});
+      const img = el('img', {src: canvas.toDataURL('image/jpeg',0.85), style:'display:block;max-width:100%;border:1px solid var(--line);border-radius:6px;'});
+      const overlay = el('div', {class:'cropbox'});
+      previewWrap.appendChild(img); previewWrap.appendChild(overlay);
+      card.appendChild(previewWrap);
+      function updateOverlay(){
+        overlay.style.left = margins.left + '%';
+        overlay.style.right = margins.right + '%';
+        overlay.style.top = margins.top + '%';
+        overlay.style.bottom = margins.bottom + '%';
+      }
+      ['top','bottom','left','right'].forEach(side => {
+        const label = {top:'ขอบบน', bottom:'ขอบล่าง', left:'ขอบซ้าย', right:'ขอบขวา'}[side];
+        const f = el('div', {class:'field'}, [
+          el('label',{},[`${label}: ${margins[side]}%`]),
+          el('input', {type:'range', min:'0', max:'30', step:'1', value:String(margins[side])}),
+        ]);
+        f.querySelector('input').addEventListener('input', e=>{
+          margins[side] = +e.target.value;
+          f.querySelector('label').textContent = `${label}: ${margins[side]}%`;
+          updateOverlay();
+        });
+        card.appendChild(f);
+      });
+      updateOverlay();
+      const goBtn = el('button',{class:'btn block'},['ครอบตัดขอบ']);
+      goBtn.addEventListener('click', doApply);
+      card.appendChild(goBtn);
+      formWrap.appendChild(card);
+    }
+    async function doApply(){
+      resultWrap.innerHTML='';
+      resultWrap.appendChild(el('div',{class:'note'},[el('span',{class:'spinner'}),'กำลังครอบตัด...']));
+      try{
+        const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        for(const page of doc.getPages()){
+          const {width, height} = page.getSize();
+          const l = width*margins.left/100, r = width*margins.right/100;
+          const t = height*margins.top/100, b = height*margins.bottom/100;
+          page.setCropBox(l, b, width-l-r, height-t-b);
+        }
+        const bytes = await doc.save();
+        resultWrap.innerHTML='';
+        const box = el('div',{class:'result-box'},[el('div',{class:'rtext'},[el('div',{class:'rtitle'},['ครอบตัดเรียบร้อย']),el('div',{class:'rsub'},[fmtBytes(bytes.length)])])]);
+        const dl = el('button',{class:'btn'},['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', ()=>downloadBytes(bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-ครอบตัด.pdf`, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML='';
+        resultWrap.appendChild(el('div',{class:'note warn'},['ครอบตัดไม่สำเร็จ: '+err.message]));
+      }
+    }
+  }
+});
+
+/* ===================== ใส่รหัสผ่าน PDF (ยังไม่รองรับ) ===================== */
+/* ===================== Shared: place an image on many pages / many files ===================== */
+const STAMP_KEY = 'pdftools.stamps';
+function getStamps(){ try{ return JSON.parse(localStorage.getItem(STAMP_KEY) || '[]'); }catch(e){ return []; } }
+function setStamps(a){ try{ localStorage.setItem(STAMP_KEY, JSON.stringify(a)); return true; }catch(e){ toast('พื้นที่จัดเก็บเต็ม บันทึกไม่ได้', true); return false; } }
+function thaiDate(d){ return (d||new Date()).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'numeric'}); }
+function thaiTime(d){ return (d||new Date()).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}) + ' น.'; }
+/* parse "1,3-5" -> Set of page numbers (1-based) */
+function parsePageList(s, n){
+  const out = new Set();
+  String(s||'').split(/[,\s]+/).filter(Boolean).forEach(part => {
+    const m = part.match(/^(\d+)(?:-(\d+))?$/); if(!m) return;
+    let a = +m[1], b = m[2] ? +m[2] : a; if(a>b) [a,b] = [b,a];
+    for(let i=Math.max(1,a); i<=Math.min(n,b); i++) out.add(i);
+  });
+  return out;
+}
+/* draw image centered at displayed (xr,yr) with width = frac * displayed page width; handles /Rotate */
+function placeImageOnPage(page, img, xr, yr, frac){
+  const {width:W, height:H} = page.getSize();
+  const r = ((page.getRotation().angle % 360) + 360) % 360;
+  const dispW = (r % 180) ? H : W;
+  const w = dispW * frac, h = w * img.height / img.width;
+  let cx, cy;
+  if(r === 90){ cx = yr*W; cy = xr*H; }
+  else if(r === 180){ cx = W - xr*W; cy = yr*H; }
+  else if(r === 270){ cx = W - yr*W; cy = H - xr*H; }
+  else { cx = xr*W; cy = H - yr*H; }
+  const t = r * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+  const x = cx - (w/2*c - h/2*s), y = cy - (w/2*s + h/2*c);
+  page.drawImage(img, {x, y, width:w, height:h, rotate: PDFLib.degrees(r)});
+}
+/* opts: {getImage: async () => dataUrl|null, suffix, defaultFrac, title} */
+function buildBatchPlacer(container, opts){
+  let files = [], placer = null, point = null, frac = opts.defaultFrac || 0.25, scope = 'this', custom = '';
+  const card = el('div', {class:'card'});
+  card.appendChild(el('div', {class:'note'}, [opts.title || 'เลือกไฟล์ PDF (เลือกได้หลายไฟล์ ตำแหน่งเดียวกันจะใช้กับทุกไฟล์)']));
+  const dz = buildDropzone({accept:'application/pdf', multiple:true, label:'เลือกไฟล์ PDF ที่ต้องการวาง', sub:'เลือกไฟล์ PDF',
+    onFiles: async (fs) => { for(const f of fs) files.push({file:f, buf: await readAsArrayBuffer(f)}); point = null; await drawUI(); }});
+  card.appendChild(dz);
+  container.appendChild(card);
+  const uiWrap = el('div'), resultWrap = el('div');
+  container.appendChild(uiWrap); container.appendChild(resultWrap);
+  let markerImgUrl = null;
+  async function showMarker(){
+    if(!point || !placer) return;
+    if(!markerImgUrl) markerImgUrl = await opts.getImage();
+    if(!markerImgUrl) return;
+    const w = (placer.el.querySelector('.placer img').clientWidth || 600) * frac;
+    placer.setMarker({page:point.page, xr:point.xr, yr:point.yr, html:`<img src="${markerImgUrl}" style="width:${w}px;display:block;opacity:.9;transform:translateY(50%)">`});
+  }
+  async function drawUI(){
+    uiWrap.innerHTML = ''; resultWrap.innerHTML = '';
+    if(!files.length) return;
+    const fc = el('div', {class:'card'});
+    const list = el('div', {class:'filelist'});
+    files.forEach((f, i) => {
+      const rm = el('button', {class:'iconbtn', html:ICONS.close, title:'เอาออก'});
+      rm.addEventListener('click', async () => { files.splice(i,1); point = null; await drawUI(); });
+      list.appendChild(el('div', {class:'file-item'}, [el('span', {class:'fname'}, [f.file.name]), el('span', {class:'fsize'}, [fmtBytes(f.file.size)]), rm]));
+    });
+    fc.appendChild(list);
+    fc.appendChild(el('div', {class:'note'}, ['แตะตำแหน่งบนหน้าเอกสารที่ต้องการวาง' + (files.length>1 ? ' (ตัวอย่างจากไฟล์แรก)' : '')]));
+    placer = await buildPagePlacer(new Uint8Array(files[0].buf), {
+      onPick: async (pt) => {
+        markerImgUrl = await opts.getImage();
+        if(!markerImgUrl){ toast(opts.emptyMsg || 'ยังไม่ได้เลือกภาพที่จะวาง', true); return; }
+        point = pt; showMarker();
+      }
+    });
+    fc.appendChild(placer.el);
+    const sf = el('div', {class:'field', style:'margin-top:12px;'}, [el('label', {}, [`ขนาด: ${Math.round(frac*100)}% ของความกว้างหน้า`]), el('input', {type:'range', min:'5', max:'70', step:'1', value:String(Math.round(frac*100))})]);
+    sf.querySelector('input').addEventListener('input', e => { frac = (+e.target.value)/100; sf.querySelector('label').textContent = `ขนาด: ${e.target.value}% ของความกว้างหน้า`; showMarker(); });
+    fc.appendChild(sf);
+    const sel = el('select', {}, [
+      el('option', {value:'this'}, ['เฉพาะหน้าที่แตะ']), el('option', {value:'all'}, ['ทุกหน้า']),
+      el('option', {value:'first'}, ['หน้าแรก']), el('option', {value:'last'}, ['หน้าสุดท้าย']), el('option', {value:'custom'}, ['ระบุหน้าเอง']),
+    ]);
+    sel.value = scope;
+    const customIn = el('input', {type:'text', placeholder:'เช่น 1,3-5', value:custom, style:'margin-top:8px;' + (scope==='custom'?'':'display:none;')});
+    sel.addEventListener('change', () => { scope = sel.value; customIn.style.display = scope==='custom' ? '' : 'none'; });
+    customIn.addEventListener('input', () => custom = customIn.value);
+    fc.appendChild(el('div', {class:'field'}, [el('label', {}, ['วางในหน้าไหน']), sel, customIn]));
+    uiWrap.appendChild(fc);
+    const go = el('button', {class:'btn block'}, [files.length>1 ? `บันทึกทั้ง ${files.length} ไฟล์` : 'บันทึกลงในไฟล์']);
+    go.addEventListener('click', apply);
+    uiWrap.appendChild(go);
+  }
+  async function apply(){
+    const url = await opts.getImage();
+    if(!url){ toast(opts.emptyMsg || 'ยังไม่ได้เลือกภาพที่จะวาง', true); return; }
+    if(!point){ toast('กรุณาแตะตำแหน่งบนหน้าเอกสารก่อน', true); return; }
+    resultWrap.innerHTML = '';
+    const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังบันทึก...']);
+    resultWrap.appendChild(status);
+    try{
+      const pngBytes = await fetchPngBytesFromDataUrl(url);
+      const outs = [];
+      for(const f of files){
+        const doc = await PDFLib.PDFDocument.load(f.buf, {ignoreEncryption:true});
+        const img = await doc.embedPng(pngBytes);
+        const pages = doc.getPages(), n = pages.length;
+        let targets;
+        if(scope === 'all') targets = pages.map((_,i)=>i+1);
+        else if(scope === 'first') targets = [1];
+        else if(scope === 'last') targets = [n];
+        else if(scope === 'custom') targets = [...parsePageList(custom, n)];
+        else targets = [Math.min(point.page, n)];
+        if(!targets.length) throw new Error('ไม่พบหน้าที่ระบุ');
+        targets.forEach(p => placeImageOnPage(pages[p-1], img, point.xr, point.yr, frac));
+        outs.push({name: f.file.name.replace(/\.pdf$/i,'') + (opts.suffix || '-วาง') + '.pdf', bytes: await doc.save(), count: targets.length});
+      }
+      resultWrap.innerHTML = '';
+      outs.forEach(o => {
+        const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [o.name]), el('div', {class:'rsub'}, [`${fmtBytes(o.bytes.length)} • วาง ${o.count} หน้า`])])]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด']);
+        dl.addEventListener('click', () => downloadBytes(o.bytes, o.name, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+      });
+      if(outs.length > 1){
+        const all = el('button', {class:'btn block secondary', style:'margin-top:12px;'}, ['ดาวน์โหลดทั้งหมด (.zip)']);
+        all.addEventListener('click', () => downloadBlob(DocxLib.zip(outs.map(o => ({name:o.name, data:o.bytes})), 'application/zip'), `เอกสาร-${niceDate()}.zip`));
+        resultWrap.appendChild(all);
+      }
+    }catch(err){ console.error(err); resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['บันทึกไม่สำเร็จ: ' + err.message])); }
+  }
+  return { refresh(){ markerImgUrl = null; showMarker(); } };
+}
+
+/* ===================== PDF encryption (Standard security handler, RC4 128-bit, R3) ===================== */
+const PdfCrypt = (() => {
+  function md5(bytes){
+    const K = new Int32Array(64), S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+    for(let i=0;i<64;i++) K[i] = Math.floor(Math.abs(Math.sin(i+1)) * 4294967296) | 0;
+    const n = bytes.length, total = ((n + 8) >> 6) + 1, buf = new Uint8Array(total*64);
+    buf.set(bytes); buf[n] = 0x80;
+    const bits = n * 8; const dv = new DataView(buf.buffer);
+    dv.setUint32(total*64-8, bits >>> 0, true); dv.setUint32(total*64-4, Math.floor(bits / 4294967296), true);
+    let a0=0x67452301|0, b0=0xefcdab89|0, c0=0x98badcfe|0, d0=0x10325476|0;
+    const M = new Int32Array(16);
+    for(let blk=0; blk<total; blk++){
+      for(let j=0;j<16;j++) M[j] = dv.getInt32(blk*64 + j*4, true);
+      let A=a0, B=b0, C=c0, D=d0;
+      for(let i=0;i<64;i++){
+        let F, g;
+        if(i<16){ F=(B&C)|(~B&D); g=i; }
+        else if(i<32){ F=(D&B)|(~D&C); g=(5*i+1)%16; }
+        else if(i<48){ F=B^C^D; g=(3*i+5)%16; }
+        else { F=C^(B|~D); g=(7*i)%16; }
+        F = (F + A + K[i] + M[g]) | 0;
+        A = D; D = C; C = B;
+        B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) | 0;
+      }
+      a0=(a0+A)|0; b0=(b0+B)|0; c0=(c0+C)|0; d0=(d0+D)|0;
+    }
+    const out = new Uint8Array(16), ov = new DataView(out.buffer);
+    ov.setInt32(0,a0,true); ov.setInt32(4,b0,true); ov.setInt32(8,c0,true); ov.setInt32(12,d0,true);
+    return out;
+  }
+  function rc4(key, data){
+    const s = new Uint8Array(256); for(let i=0;i<256;i++) s[i]=i;
+    for(let i=0,j=0;i<256;i++){ j=(j+s[i]+key[i%key.length])&255; const t=s[i]; s[i]=s[j]; s[j]=t; }
+    const out = new Uint8Array(data.length);
+    for(let k=0,i=0,j=0;k<data.length;k++){ i=(i+1)&255; j=(j+s[i])&255; const t=s[i]; s[i]=s[j]; s[j]=t; out[k]=data[k]^s[(s[i]+s[j])&255]; }
+    return out;
+  }
+  const PAD = new Uint8Array([0x28,0xBF,0x4E,0x5E,0x4E,0x75,0x8A,0x41,0x64,0x00,0x4E,0x56,0xFF,0xFA,0x01,0x08,0x2E,0x2E,0x00,0xB6,0xD0,0x68,0x3E,0x80,0x2F,0x0C,0xA9,0xFE,0x64,0x53,0x69,0x7A]);
+  function padPw(pw){ const b = new Uint8Array(32); const raw = Array.from(pw).slice(0,32).map(c => c.charCodeAt(0) & 255); b.set(raw); b.set(PAD.subarray(0, 32-raw.length), raw.length); return b; }
+  const cat = (...arrs) => { const n = arrs.reduce((s,a)=>s+a.length,0), o = new Uint8Array(n); let p=0; arrs.forEach(a=>{o.set(a,p); p+=a.length;}); return o; };
+  function computeO(ownerPw, userPw){
+    let h = md5(padPw(ownerPw)); for(let i=0;i<50;i++) h = md5(h);
+    let o = rc4(h, padPw(userPw));
+    for(let i=1;i<=19;i++) o = rc4(h.map(x => x ^ i), o);
+    return o;
+  }
+  function computeKey(userPw, O, P, id0){
+    const p = new Uint8Array(4); new DataView(p.buffer).setInt32(0, P, true);
+    let h = md5(cat(padPw(userPw), O, p, id0));
+    for(let i=0;i<50;i++) h = md5(h);
+    return h;
+  }
+  function computeU(key, id0){
+    let u = rc4(key, md5(cat(PAD, id0)));
+    for(let i=1;i<=19;i++) u = rc4(key.map(x => x ^ i), u);
+    return cat(u, new Uint8Array(16));
+  }
+  function objKey(key, num, gen){
+    return md5(cat(key, new Uint8Array([num&255,(num>>8)&255,(num>>16)&255, gen&255,(gen>>8)&255]))).subarray(0,16);
+  }
+  const hex = u8 => Array.from(u8, b => b.toString(16).padStart(2,'0')).join('');
+  /* perms: {print, copy, modify} booleans */
+  async function encrypt(pdfBytes, userPw, ownerPw, perms){
+    const L = PDFLib;
+    const doc = await L.PDFDocument.load(pdfBytes, {ignoreEncryption:true, updateMetadata:false});
+    const ctx = doc.context;
+    let P = 0xFFFFF0C0 | 0;
+    if(perms.print) P |= (1<<2) | (1<<11);
+    if(perms.modify) P |= (1<<3) | (1<<5) | (1<<8) | (1<<10);
+    if(perms.copy) P |= (1<<4) | (1<<9);
+    const id0 = md5(new TextEncoder().encode(Date.now() + ':' + Math.random() + ':' + pdfBytes.length));
+    const O = computeO(ownerPw, userPw);
+    const key = computeKey(userPw, O, P, id0);
+    const U = computeU(key, id0);
+    const encStr = (k, obj) => {
+      if(obj instanceof L.PDFString || obj instanceof L.PDFHexString) return L.PDFHexString.of(hex(rc4(k, obj.asBytes())));
+      if(obj instanceof L.PDFArray){ for(let i=0;i<obj.size();i++) obj.set(i, encStr(k, obj.get(i))); return obj; }
+      if(obj instanceof L.PDFDict){ for(const [n,v] of obj.entries()) obj.set(n, encStr(k, v)); return obj; }
+      return obj;
+    };
+    for(const [ref, obj] of ctx.enumerateIndirectObjects()){
+      const k = objKey(key, ref.objectNumber, ref.generationNumber);
+      if(obj instanceof L.PDFRawStream){
+        const t = obj.dict.lookup(L.PDFName.of('Type'));
+        if(t === L.PDFName.of('XRef')) continue;
+        encStr(k, obj.dict);
+        ctx.assign(ref, L.PDFRawStream.of(obj.dict, rc4(k, obj.contents)));
+      } else if(obj instanceof L.PDFStream){
+        const contents = obj.getContents();
+        encStr(k, obj.dict);
+        ctx.assign(ref, L.PDFRawStream.of(obj.dict, rc4(k, contents)));
+      } else {
+        const r = encStr(k, obj); if(r !== obj) ctx.assign(ref, r);
+      }
+    }
+    const encDict = ctx.obj({Filter:'Standard', V:2, R:3, Length:128, P});
+    encDict.set(L.PDFName.of('O'), L.PDFHexString.of(hex(O)));
+    encDict.set(L.PDFName.of('U'), L.PDFHexString.of(hex(U)));
+    ctx.trailerInfo.Encrypt = ctx.register(encDict);
+    const idHex = L.PDFHexString.of(hex(id0));
+    ctx.trailerInfo.ID = ctx.obj([idHex, idHex]);
+    return doc.save({useObjectStreams:false, updateFieldAppearances:false, addDefaultPage:false});
+  }
+  return {encrypt, md5};
+})();
+
+registerTool({
+  id:'password', cat:'mark', icon:'lock',
+  name:'ใส่รหัสผ่าน PDF', desc:'เข้ารหัสไฟล์ให้ต้องใส่รหัสผ่านก่อนเปิด',
+  longDesc:'ตั้งรหัสผ่านสำหรับเปิดไฟล์ PDF (เข้ารหัส 128 บิต) และเลือกได้ว่าจะอนุญาตให้พิมพ์หรือคัดลอกข้อความหรือไม่ เหมาะกับเอกสารที่มีข้อมูลส่วนบุคคลก่อนส่งต่อ',
+  render(container){
+    let srcFile = null, srcBuf = null;
+    const dz = buildDropzone({accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF ที่ต้องการใส่รหัสผ่าน', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => { srcFile = files[0]; srcBuf = await readAsArrayBuffer(srcFile); drawUI(); }});
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const formWrap = el('div'), resultWrap = el('div');
+    container.appendChild(formWrap); container.appendChild(resultWrap);
+    function drawUI(){
+      formWrap.innerHTML = ''; resultWrap.innerHTML = '';
+      const pw1 = el('input', {type:'password', placeholder:'รหัสผ่าน (ภาษาอังกฤษ/ตัวเลข)', autocomplete:'new-password'});
+      const pw2 = el('input', {type:'password', placeholder:'พิมพ์รหัสผ่านอีกครั้ง', autocomplete:'new-password'});
+      const show = el('input', {type:'checkbox'});
+      show.addEventListener('change', () => { pw1.type = pw2.type = show.checked ? 'text' : 'password'; });
+      const cb = (label, checked) => { const c = el('input', {type:'checkbox'}); c.checked = checked; return [c, el('label', {style:'display:flex;gap:8px;align-items:center;margin:6px 0;font-weight:normal;'}, [c, label])]; };
+      const [cPrint, lPrint] = cb('อนุญาตให้พิมพ์', true);
+      const [cCopy, lCopy] = cb('อนุญาตให้คัดลอกข้อความ', false);
+      const [cMod, lMod] = cb('อนุญาตให้แก้ไขเอกสาร', false);
+      const go = el('button', {class:'btn block'}, ['ใส่รหัสผ่าน']);
+      go.addEventListener('click', async () => {
+        const p = pw1.value;
+        if(p.length < 4){ toast('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', true); return; }
+        if(/[^\x20-\x7E]/.test(p)){ toast('ใช้ได้เฉพาะตัวอักษรภาษาอังกฤษ ตัวเลข และสัญลักษณ์', true); return; }
+        if(p !== pw2.value){ toast('รหัสผ่านทั้งสองช่องไม่ตรงกัน', true); return; }
+        resultWrap.innerHTML = '';
+        resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังเข้ารหัส...']));
+        try{
+          const perms = {print:cPrint.checked, copy:cCopy.checked, modify:cMod.checked};
+          const owner = (perms.print && perms.copy && perms.modify) ? p : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2,'0')).join('');
+          const bytes = await PdfCrypt.encrypt(new Uint8Array(srcBuf), p, owner, perms);
+          const name = srcFile.name.replace(/\.pdf$/i,'') + '-ล็อก.pdf';
+          resultWrap.innerHTML = '';
+          const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [name]), el('div', {class:'rsub'}, [fmtBytes(bytes.length) + ' • ต้องใส่รหัสผ่านก่อนเปิด'])])]);
+          const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+          dl.addEventListener('click', () => downloadBytes(bytes, name, 'application/pdf'));
+          box.appendChild(dl); resultWrap.appendChild(box);
+          resultWrap.appendChild(el('div', {class:'note'}, ['จดรหัสผ่านไว้ให้ดี ถ้าลืมจะเปิดไฟล์นี้ไม่ได้ (ไฟล์ต้นฉบับในเครื่องยังไม่ถูกล็อก)']));
+        }catch(err){ console.error(err); resultWrap.innerHTML=''; resultWrap.appendChild(el('div', {class:'note warn'}, ['เข้ารหัสไม่สำเร็จ: ' + err.message])); }
+      });
+      formWrap.appendChild(el('div', {class:'card'}, [
+        el('div', {class:'note'}, [`ไฟล์: ${srcFile.name} (${fmtBytes(srcFile.size)})`]),
+        el('div', {class:'field'}, [el('label', {}, ['รหัสผ่านสำหรับเปิดไฟล์']), pw1]),
+        el('div', {class:'field'}, [pw2]),
+        el('label', {style:'display:flex;gap:8px;align-items:center;margin:4px 0 10px;font-weight:normal;'}, [show, 'แสดงรหัสผ่าน']),
+        el('div', {class:'field'}, [el('label', {}, ['สิทธิ์ของผู้เปิดไฟล์']), lPrint, lCopy, lMod]),
+        go,
+      ]));
+    }
+  }
+});
+
+/* ===================== ลายเซ็นจากรูปถ่าย ===================== */
+const SIG_KEY = 'pdftools.savedSignature';
+function getSavedSignature(){ try{ return localStorage.getItem(SIG_KEY); }catch(e){ return null; } }
+function saveSignature(d){ try{ localStorage.setItem(SIG_KEY, d); return true; }catch(e){ return false; } }
+/* photo -> transparent signature canvas. opts: {sens(0.05-0.5), color:'#rrggbb'|null(keep dark), maxW} */
+function extractSignature(img, opts){
+  const maxSide = 1100;
+  const sc = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width*sc)), h = Math.max(1, Math.round(img.height*sc));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', {willReadFrequently:true});
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+  ctx.drawImage(img, 0, 0, w, h);
+  const src = ctx.getImageData(0,0,w,h), d = src.data;
+  const g = new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) g[i] = 0.299*d[i*4] + 0.587*d[i*4+1] + 0.114*d[i*4+2];
+  // background estimate: box blur of the local max-ish (use blur of gray after clipping dark ink) via integral image
+  const r = Math.max(12, Math.round(Math.min(w,h)/18));
+  const sorted = Float32Array.from(g).sort(); const p80 = sorted[Math.floor(sorted.length*0.8)];
+  const gc = new Float32Array(w*h); for(let i=0;i<w*h;i++) gc[i] = Math.max(g[i], p80*0.85); // limit ink influence on bg
+  const W = w+1, I = new Float64Array(W*(h+1));
+  for(let y=0;y<h;y++){ let row=0; for(let x=0;x<w;x++){ row += gc[y*w+x]; I[(y+1)*W+x+1] = I[y*W+x+1] + row; } }
+  const sens = opts.sens, soft = 0.12;
+  const out = ctx.createImageData(w,h), o = out.data;
+  let col = [0,0,0]; if(opts.color){ col = [parseInt(opts.color.slice(1,3),16), parseInt(opts.color.slice(3,5),16), parseInt(opts.color.slice(5,7),16)]; }
+  for(let y=0;y<h;y++){
+    const y0=Math.max(0,y-r), y1=Math.min(h,y+r+1);
+    for(let x=0;x<w;x++){
+      const x0=Math.max(0,x-r), x1=Math.min(w,x+r+1);
+      const area=(x1-x0)*(y1-y0);
+      const bg = (I[y1*W+x1]-I[y0*W+x1]-I[y1*W+x0]+I[y0*W+x0])/area + 1;
+      const ratio = 1 - g[y*w+x]/bg;
+      let a = (ratio - sens)/soft; a = a<0?0:a>1?1:a; a = a*a*(3-2*a);
+      const i=(y*w+x)*4;
+      if(opts.color){ o[i]=col[0]; o[i+1]=col[1]; o[i+2]=col[2]; }
+      else { const k = Math.max(0, Math.min(90, g[y*w+x]*0.5)); o[i]=o[i+1]=o[i+2]=k; }
+      o[i+3] = Math.round(a*255);
+    }
+  }
+  // crop to ink bounds (ignore specks: need >=2 ink px in a row/col)
+  const rows = new Uint16Array(h), cols = new Uint16Array(w);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(o[(y*w+x)*4+3]>110){ rows[y]++; cols[x]++; }
+  let t=0,b=h-1,l=0,rt=w-1;
+  while(t<h && rows[t]<2) t++; while(b>t && rows[b]<2) b--;
+  while(l<w && cols[l]<2) l++; while(rt>l && cols[rt]<2) rt--;
+  if(t>=b || l>=rt) return null;
+  const pad = 6; t=Math.max(0,t-pad); l=Math.max(0,l-pad); b=Math.min(h-1,b+pad); rt=Math.min(w-1,rt+pad);
+  const full = document.createElement('canvas'); full.width=w; full.height=h; full.getContext('2d').putImageData(out,0,0);
+  const cw = rt-l+1, ch = b-t+1, k = Math.min(1, (opts.maxW||900)/cw);
+  const res = document.createElement('canvas'); res.width=Math.round(cw*k); res.height=Math.round(ch*k);
+  const rc = res.getContext('2d'); rc.imageSmoothingQuality='high';
+  rc.drawImage(full, l, t, cw, ch, 0, 0, res.width, res.height);
+  return res;
+}
+registerTool({
+  id:'photosign', cat:'mark', icon:'photosign',
+  name:'ลายเซ็นจากรูปถ่าย', desc:'ถ่ายรูปลายเซ็นบนกระดาษ แล้วทำเป็นไฟล์ PNG พื้นหลังโปร่งใส',
+  longDesc:'เซ็นชื่อบนกระดาษขาวด้วยปากกาสีเข้ม ถ่ายรูปหรือเลือกรูป แอปจะลบพื้นกระดาษให้เหลือแต่ลายเซ็น แล้วดาวน์โหลดเป็น PNG ไปแทรกใน Word / Excel / PowerPoint ได้ หรือบันทึกไว้ในแอปเพื่อใช้ในเครื่องมือ "เซ็นเอกสาร PDF"',
+  render(container){
+    let img = null, result = null, sens = 0.18, color = '#111111';
+    const camInput = el('input', {type:'file', accept:'image/*', capture:'environment', style:'display:none'});
+    const galInput = el('input', {type:'file', accept:'image/*', style:'display:none'});
+    const onFile = async (f) => {
+      if(!f) return;
+      try{ img = await loadImage(await readAsDataURL(f)); update(); }
+      catch(e){ toast('เปิดรูปไม่ได้', true); }
+    };
+    camInput.addEventListener('change', () => onFile(camInput.files[0]));
+    if(window.__sharedFiles){ const f = window.__sharedFiles.find(x => fileMatchesAccept(x, 'image/*')); window.__sharedFiles = null; if(f) setTimeout(() => onFile(f), 0); }
+    galInput.addEventListener('change', () => onFile(galInput.files[0]));
+    const b1 = el('button', {class:'btn', type:'button'}, ['📷 ถ่ายรูปลายเซ็น']);
+    const b2 = el('button', {class:'btn secondary', type:'button'}, ['เลือกรูปจากเครื่อง']);
+    b1.addEventListener('click', () => camInput.click());
+    b2.addEventListener('click', () => galInput.click());
+    container.appendChild(el('div', {class:'card'}, [
+      el('div', {class:'note'}, ['เคล็ดลับ: เซ็นด้วยปากกาสีเข้มบนกระดาษขาว ถ่ายในที่สว่าง ให้ลายเซ็นอยู่กลางรูปและไม่ให้เงามือบัง']),
+      el('div', {class:'row', style:'margin-top:10px;gap:8px;flex-wrap:wrap;'}, [b1, b2]), camInput, galInput,
+    ]));
+    const wrap = el('div'); container.appendChild(wrap);
+    const savedInfo = getSavedSignature();
+    if(savedInfo){
+      container.appendChild(el('div', {class:'card'}, [
+        el('div', {class:'note'}, ['ลายเซ็นที่บันทึกไว้ในแอปตอนนี้:']),
+        el('div', {class:'sigprev'}, [el('img', {src:savedInfo, style:'max-width:100%;max-height:90px;'})]),
+      ]));
+    }
+    function update(){
+      wrap.innerHTML = '';
+      if(!img) return;
+      result = extractSignature(img, {sens, color});
+      const card = el('div', {class:'card'});
+      if(!result){
+        card.appendChild(el('div', {class:'note warn'}, ['ไม่พบลายเซ็นในรูป ลองลดค่า "ตัดพื้นหลัง" ลงหรือถ่ายใหม่ให้ชัดขึ้น']));
+      } else {
+        const prev = el('div', {style:'background:repeating-conic-gradient(#d9d9d9 0 25%,#fff 0 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center;'});
+        const im = el('img', {src: result.toDataURL('image/png'), style:'max-width:100%;max-height:160px;'});
+        prev.appendChild(im); card.appendChild(prev);
+      }
+      const sf = el('div', {class:'field', style:'margin-top:10px;'}, [
+        el('label', {}, [`ตัดพื้นหลัง: ${Math.round(sens*100)}% (เพิ่ม = ลบรอยเปื้อน/เงามากขึ้น, ลด = เส้นหนาขึ้น)`]),
+        el('input', {type:'range', min:'5', max:'50', step:'1', value:String(Math.round(sens*100))}),
+      ]);
+      const inp = sf.querySelector('input');
+      inp.addEventListener('input', e => { sf.querySelector('label').textContent = `ตัดพื้นหลัง: ${e.target.value}% (เพิ่ม = ลบรอยเปื้อน/เงามากขึ้น, ลด = เส้นหนาขึ้น)`; });
+      inp.addEventListener('change', e => { sens = (+e.target.value)/100; update(); });
+      card.appendChild(sf);
+      const cs = el('select', {}, [
+        el('option', {value:'#111111'}, ['ดำ']), el('option', {value:'#1b3a8c'}, ['น้ำเงิน (เหมือนปากกาน้ำเงิน)']),
+      ]);
+      cs.value = color; cs.addEventListener('change', () => { color = cs.value; update(); });
+      card.appendChild(el('div', {class:'field'}, [el('label', {}, ['สีหมึก']), cs]));
+      if(result){
+        const row = el('div', {class:'row', style:'gap:8px;flex-wrap:wrap;margin-top:8px;'});
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PNG']);
+        dl.addEventListener('click', async () => {
+          const bytes = await fetchPngBytesFromDataUrl(result.toDataURL('image/png'));
+          downloadBlob(new Blob([bytes], {type:'image/png'}), `ลายเซ็น-${niceDate()}.png`);
+        });
+        const sv = el('button', {class:'btn secondary'}, ['บันทึกไว้ใช้ในแอป']);
+        sv.addEventListener('click', () => toast(saveSignature(result.toDataURL('image/png')) ? 'บันทึกลายเซ็นแล้ว — ใช้ได้ในเครื่องมือ "เซ็นเอกสาร PDF"' : 'บันทึกไม่ได้', false));
+        row.appendChild(dl); row.appendChild(sv);
+        if(navigator.clipboard && window.ClipboardItem){
+          const cp = el('button', {class:'btn secondary'}, ['คัดลอก']);
+          cp.addEventListener('click', () => result.toBlob(async b => { try{ await navigator.clipboard.write([new ClipboardItem({'image/png': b})]); toast('คัดลอกแล้ว วางใน Word/Excel ได้เลย'); }catch(e){ toast('คัดลอกไม่ได้ ใช้ดาวน์โหลดแทน', true); } }, 'image/png'));
+          row.appendChild(cp);
+        }
+        card.appendChild(row);
+        card.appendChild(el('div', {class:'note', style:'margin-top:10px;'}, ['วิธีใช้ใน Word / Excel: แทรก (Insert) → รูปภาพ (Pictures) → เลือกไฟล์ PNG ที่ดาวน์โหลด แล้วย่อขนาดวางเหนือชื่อ']));
+      }
+      wrap.appendChild(card);
+    }
+  }
+});
+
+/* ===================== เซ็นเอกสาร PDF ===================== */
+function trimCanvasToPng(canvas){
+  const x = canvas.getContext('2d'), {width:w, height:h} = canvas, d = x.getImageData(0,0,w,h).data;
+  let t=h, b=-1, l=w, r=-1;
+  for(let y=0;y<h;y++) for(let i=0;i<w;i++) if(d[(y*w+i)*4+3] > 20){ if(y<t)t=y; if(y>b)b=y; if(i<l)l=i; if(i>r)r=i; }
+  if(b<0) return null;
+  const p = 4; t=Math.max(0,t-p); l=Math.max(0,l-p); b=Math.min(h-1,b+p); r=Math.min(w-1,r+p);
+  const c = document.createElement('canvas'); c.width = r-l+1; c.height = b-t+1;
+  c.getContext('2d').drawImage(canvas, l, t, c.width, c.height, 0, 0, c.width, c.height);
+  return c.toDataURL('image/png');
+}
+registerTool({
+  id:'sign', cat:'mark', icon:'sign',
+  name:'เซ็นเอกสาร PDF', desc:'วาดลายเซ็นหรือใช้ลายเซ็นที่บันทึกไว้ วางได้หลายหน้า/หลายไฟล์',
+  longDesc:'วาดลายเซ็นด้วยนิ้วหรือเมาส์ (หรือใช้ลายเซ็นจากรูปถ่ายที่บันทึกไว้) แล้วแตะตำแหน่งบนเอกสาร เลือกได้ว่าจะวางเฉพาะหน้านั้น ทุกหน้า หรือหลายไฟล์พร้อมกัน',
+  render(container){
+    const card1 = el('div', {class:'card'});
+    card1.appendChild(el('div', {class:'note'}, ['ขั้นตอนที่ 1: วาดลายเซ็นด้านล่าง หรือกด "ใช้ลายเซ็นที่บันทึกไว้"']));
+    const pad = buildSignaturePad();
+    card1.appendChild(pad.el);
+    const padRow = el('div', {class:'row', style:'margin-top:10px;'});
+    const clearBtn = el('button', {class:'btn secondary sm'}, ['ล้างลายเซ็น']);
+    clearBtn.addEventListener('click', () => { pad.clear(); placer.refresh(); });
+    padRow.appendChild(clearBtn);
+    const savedSig = getSavedSignature();
+    if(savedSig){
+      const useBtn = el('button', {class:'btn secondary sm'}, ['ใช้ลายเซ็นที่บันทึกไว้']);
+      useBtn.addEventListener('click', async () => { pad.clear(); await pad.loadImage(savedSig); placer.refresh(); });
+      padRow.appendChild(useBtn);
+    }
+    const keepBtn = el('button', {class:'btn ghost sm'}, ['บันทึกลายเซ็นนี้ไว้ใช้ครั้งหน้า']);
+    keepBtn.addEventListener('click', () => { const u = pad.isEmpty() ? null : trimCanvasToPng(pad.el.querySelector('canvas')); if(!u){ toast('กรุณาวาดลายเซ็นก่อน', true); return; } saveSignature(u); toast('บันทึกลายเซ็นแล้ว'); });
+    padRow.appendChild(keepBtn);
+    card1.appendChild(padRow);
+    container.appendChild(card1);
+    const placer = buildBatchPlacer(container, {
+      getImage: async () => pad.isEmpty() ? null : trimCanvasToPng(pad.el.querySelector('canvas')),
+      suffix:'-ลงชื่อ', defaultFrac:0.22, emptyMsg:'กรุณาวาดลายเซ็นก่อน',
+      title:'ขั้นตอนที่ 2: เลือกไฟล์ PDF ที่จะเซ็น (เลือกได้หลายไฟล์ ตำแหน่งเดียวกันจะใช้กับทุกไฟล์)',
+    });
+  }
+});
+
+/* ===================== เพิ่มข้อความ/ตราประทับใน PDF ===================== */
+registerTool({
+  id:'stamp', cat:'mark', icon:'stamp',
+  name:'เพิ่มข้อความลง PDF', desc:'พิมพ์ข้อความหรือตราประทับแล้ววางในตำแหน่งที่ต้องการ',
+  longDesc:'พิมพ์ข้อความ เช่น วันที่รับเอกสาร หรือเลขที่หนังสือ แล้วแตะตำแหน่งบนหน้าเอกสารที่ต้องการวาง',
+  render(container){
+    let srcFile=null, srcBuf=null, placer=null, placedPoint=null;
+    let text='ตัวอย่างข้อความ', fontPx=22, color='#20302C';
+    const dz = buildDropzone({
+      accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => { const f=files[0]; if(!f) return; srcFile=f; srcBuf=await readAsArrayBuffer(f); await drawUI(); }
+    });
+    container.appendChild(el('div',{class:'card'},[dz]));
+    const uiWrap = el('div'); container.appendChild(uiWrap);
+    const resultWrap = el('div'); container.appendChild(resultWrap);
+
+    function currentMarkerHtml(){
+      return `<span style="font-size:${fontPx}px;font-weight:600;color:${color};font-family:'Sarabun','Noto Sans Thai',sans-serif;">${text.replace(/</g,'&lt;')}</span>`;
+    }
+
+    async function drawUI(){
+      resultWrap.innerHTML=''; uiWrap.innerHTML='';
+      const card1 = el('div',{class:'card'});
+      const tField = el('div',{class:'field'},[el('label',{},['ข้อความ']), el('input',{type:'text', value:text})]);
+      tField.querySelector('input').addEventListener('input', e=>{ text = e.target.value; refreshMarker(); });
+      card1.appendChild(tField);
+      const sField = el('div',{class:'field'},[el('label',{},[`ขนาดตัวอักษร: ${fontPx}pt`]), el('input',{type:'range',min:'10',max:'48',step:'1',value:String(fontPx)})]);
+      sField.querySelector('input').addEventListener('input', e=>{ fontPx=+e.target.value; sField.querySelector('label').textContent=`ขนาดตัวอักษร: ${fontPx}pt`; refreshMarker(); });
+      card1.appendChild(sField);
+      const cField = el('div',{class:'field'},[el('label',{},['สีข้อความ']), el('input',{type:'text', value:color})]);
+      cField.querySelector('input').addEventListener('input', e=>{ color=e.target.value||'#20302C'; refreshMarker(); });
+      card1.appendChild(cField);
+      card1.appendChild(el('div',{class:'note'},['แตะตำแหน่งบนหน้าเอกสารด้านล่างเพื่อวางข้อความ']));
+      uiWrap.appendChild(card1);
+
+      const card2 = el('div',{class:'card'});
+      placer = await buildPagePlacer(new Uint8Array(srcBuf), {
+        onPick: (pt) => { placedPoint = pt; refreshMarker(); }
+      });
+      card2.appendChild(placer.el);
+      uiWrap.appendChild(card2);
+
+      function refreshMarker(){
+        if(placedPoint) placer.setMarker({page:placedPoint.page, xr:placedPoint.xr, yr:placedPoint.yr, html:currentMarkerHtml()});
+      }
+
+      const goBtn = el('button',{class:'btn block'},['บันทึกข้อความลงในไฟล์']);
+      goBtn.addEventListener('click', doApply);
+      uiWrap.appendChild(goBtn);
+    }
+    async function doApply(){
+      if(!placedPoint){ toast('กรุณาแตะตำแหน่งที่ต้องการวางข้อความก่อน', true); return; }
+      resultWrap.innerHTML='';
+      resultWrap.appendChild(el('div',{class:'note'},[el('span',{class:'spinner'}),'กำลังบันทึก...']));
+      try{
+        const doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        const {dataUrl, width, height} = textToImageDataURL(text, {fontPx: fontPx*1.6, color, opacity:1, weight:600});
+        const pngBytes = await fetchPngBytesFromDataUrl(dataUrl);
+        const png = await doc.embedPng(pngBytes);
+        const page = doc.getPages()[placedPoint.page - 1];
+        const {width:pw, height:ph} = page.getSize();
+        const drawW = width * 0.75; // canvas px roughly to pt
+        const drawH = height * 0.75;
+        const xPt = placedPoint.xr * pw - drawW/2;
+        const yPt = ph - (placedPoint.yr * ph) - drawH/2;
+        page.drawImage(png, {x:xPt, y:yPt, width:drawW, height:drawH});
+        const bytes = await doc.save();
+        resultWrap.innerHTML='';
+        const box = el('div',{class:'result-box'},[el('div',{class:'rtext'},[el('div',{class:'rtitle'},['บันทึกข้อความเรียบร้อย']),el('div',{class:'rsub'},[fmtBytes(bytes.length)])])]);
+        const dl = el('button',{class:'btn'},['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', ()=>downloadBytes(bytes, `${srcFile.name.replace(/\.pdf$/i,'')}-เพิ่มข้อความ.pdf`, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+      }catch(err){
+        console.error(err);
+        resultWrap.innerHTML='';
+        resultWrap.appendChild(el('div',{class:'note warn'},['บันทึกไม่สำเร็จ: '+err.message]));
+      }
+    }
+  }
+});
+/* ---------- stamp renderers (canvas, Thai-safe) ---------- */
+async function renderTextStamp({lines, color, style}){
+  const fam = "'Sarabun','Noto Sans Thai',Tahoma,sans-serif";
+  try{ await document.fonts.load(`700 40px Sarabun`, 'ก'); }catch(e){}
+  const S = 3, sizes = lines.map((l,i) => i===0 ? 30 : 22);
+  const m = document.createElement('canvas').getContext('2d');
+  const widths = lines.map((l,i) => { m.font = `${i===0?700:600} ${sizes[i]*S}px ${fam}`; return m.measureText(l).width; });
+  const padX = 18*S, padY = 12*S, gap = 6*S, bw = (style==='double' ? 2.5 : 3.5) * S;
+  const W = Math.ceil(Math.max(...widths) + padX*2 + bw*2 + (style==='double'?10*S:0));
+  const lineH = sizes.map(s => s*S*1.35);
+  const H = Math.ceil(lineH.reduce((a,b)=>a+b,0) + gap*(lines.length-1) + padY*2 + bw*2 + (style==='double'?10*S:0));
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.strokeStyle = color; x.fillStyle = color; x.lineWidth = bw;
+  const rr = (p, rad) => { x.beginPath(); x.roundRect ? x.roundRect(p, p, W-2*p, H-2*p, rad) : x.rect(p, p, W-2*p, H-2*p); x.stroke(); };
+  if(style === 'round') rr(bw, 16*S);
+  else if(style === 'double'){ rr(bw, 4*S); rr(bw + 6*S, 2*S); }
+  else if(style === 'rect') rr(bw, 3*S);
+  let y = (H - (lineH.reduce((a,b)=>a+b,0) + gap*(lines.length-1)))/2;
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  lines.forEach((l,i) => { x.font = `${i===0?700:600} ${sizes[i]*S}px ${fam}`; x.fillText(l, W/2, y + lineH[i]/2); y += lineH[i] + gap; });
+  // slight ink texture for a stamp look
+  const d = x.getImageData(0,0,W,H); for(let i=3;i<d.data.length;i+=4){ if(d.data[i] && Math.random()<0.06) d.data[i] = d.data[i]*0.55; } x.putImageData(d,0,0);
+  return c.toDataURL('image/png');
+}
+
+/* ===================== ตราประทับ ===================== */
+registerTool({
+  id:'stampkit', cat:'mark', icon:'seal',
+  name:'ตราประทับสำเร็จรูป', desc:'"สำเนาถูกต้อง", ตรารับหนังสือ หรือตรายางจากรูปถ่าย บันทึกไว้ใช้ซ้ำ วางได้หลายหน้า/หลายไฟล์',
+  longDesc:'สร้างตราประทับ เช่น สำเนาถูกต้อง ด่วน ลับ ตรารับหนังสือของหน่วยงาน หรือถ่ายรูปตรายางจริง บันทึกไว้ในคลัง แล้ววางลงเอกสารได้ทีละหน้า ทุกหน้า หรือหลายไฟล์พร้อมกัน',
+  render(container){
+    let selected = null;
+    const lib = el('div', {class:'card'});
+    const maker = el('div', {class:'card'});
+    container.appendChild(lib); container.appendChild(maker);
+    const placeWrap = el('div'); container.appendChild(placeWrap);
+    const placer = buildBatchPlacer(placeWrap, {getImage: async () => selected && selected.dataUrl, suffix:'-ประทับตรา', defaultFrac:0.3, emptyMsg:'กรุณาเลือกตราจากคลังก่อน', title:'ขั้นตอนที่ 3: เลือกไฟล์ PDF ที่จะประทับตรา (เลือกได้หลายไฟล์)'});
+    function drawLib(){
+      lib.innerHTML = '';
+      lib.appendChild(el('div', {class:'note'}, ['ขั้นตอนที่ 1: เลือกตราจากคลัง (หรือสร้างใหม่ด้านล่าง)']));
+      const stamps = getStamps();
+      const sig = getSavedSignature();
+      const items = [...(sig ? [{id:'__sig', name:'ลายเซ็นของฉัน', dataUrl:sig}] : []), ...stamps];
+      if(!items.length){ lib.appendChild(el('div', {style:'color:var(--ink-soft);font-size:14px;'}, ['ยังไม่มีตราในคลัง'])); return; }
+      const grid = el('div', {style:'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;'});
+      items.forEach(s => {
+        const on = selected && selected.id === s.id;
+        const cell = el('div', {style:`border:2px solid ${on?'var(--teal)':'var(--line)'};border-radius:8px;padding:8px;background:#fff;cursor:pointer;text-align:center;`});
+        cell.appendChild(el('div', {style:'height:60px;display:flex;align-items:center;justify-content:center;'}, [el('img', {src:s.dataUrl, style:'max-width:100%;max-height:60px;'})]));
+        cell.appendChild(el('div', {style:'font-size:12px;color:var(--ink-soft);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'}, [s.name]));
+        cell.addEventListener('click', () => { selected = s; drawLib(); placer.refresh(); });
+        if(s.id !== '__sig'){
+          const del = el('button', {class:'btn ghost sm', style:'margin-top:6px;padding:2px 8px;'}, ['ลบ']);
+          del.addEventListener('click', e => { e.stopPropagation(); if(!confirm(`ลบตรา "${s.name}"?`)) return; setStamps(getStamps().filter(x => x.id !== s.id)); if(selected && selected.id===s.id) selected=null; drawLib(); });
+          cell.appendChild(del);
+        }
+        grid.appendChild(cell);
+      });
+      lib.appendChild(grid);
+    }
+    function addToLib(name, dataUrl){
+      const s = {id: 's' + Date.now(), name, dataUrl};
+      if(setStamps([...getStamps(), s])){ selected = s; drawLib(); placer.refresh(); toast('บันทึกตราลงคลังแล้ว'); lib.scrollIntoView({behavior:'smooth'}); }
+    }
+    // ---- maker ----
+    let mode = 'text', previewUrl = null;
+    function drawMaker(){
+      maker.innerHTML = '';
+      maker.appendChild(el('div', {class:'note'}, ['ขั้นตอนที่ 2 (ถ้าต้องการ): สร้างตราใหม่']));
+      const seg = el('div', {class:'seg', style:'margin-bottom:12px;'});
+      [['text','ตราข้อความ'],['receive','ตรารับหนังสือ'],['photo','จากรูปตรายาง']].forEach(([v,l]) => {
+        const b = el('button', {type:'button', class: mode===v?'active':''}, [l]);
+        b.addEventListener('click', () => { mode = v; drawMaker(); }); seg.appendChild(b);
+      });
+      maker.appendChild(seg);
+      const body = el('div'); maker.appendChild(body);
+      const prev = el('div', {style:'min-height:70px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#e6e6e6 0 25%,#fff 0 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:8px;padding:10px;margin:10px 0;'});
+      const nameIn = el('input', {type:'text', placeholder:'ตั้งชื่อตรา'});
+      const save = el('button', {class:'btn block'}, ['บันทึกลงคลัง']);
+      save.addEventListener('click', () => { if(!previewUrl){ toast('ยังไม่มีตรา', true); return; } addToLib(nameIn.value.trim() || 'ตรา', previewUrl); });
+      const colorSel = el('select', {}, [el('option', {value:'#c62828'}, ['แดง']), el('option', {value:'#1b3a8c'}, ['น้ำเงิน']), el('option', {value:'#111111'}, ['ดำ'])]);
+      const setPrev = url => { previewUrl = url; prev.innerHTML = ''; if(url) prev.appendChild(el('img', {src:url, style:'max-width:100%;max-height:150px;'})); };
+      if(mode === 'text'){
+        const preset = el('select', {}, ['สำเนาถูกต้อง','รับเรื่องแล้ว','ด่วน','ด่วนมาก','ด่วนที่สุด','ลับ','ตรวจสอบแล้ว','อนุมัติ','จ่ายแล้ว','ยกเลิก','(พิมพ์เอง)'].map(t => el('option', {value:t}, [t])));
+        const txt = el('input', {type:'text', placeholder:'ข้อความบรรทัดแรก', style:'display:none;margin-top:8px;'});
+        const line2 = el('input', {type:'text', placeholder:'บรรทัดที่ 2 (ไม่บังคับ) เช่น ชื่อ-ตำแหน่ง'});
+        const dateCb = el('input', {type:'checkbox'});
+        const styleSel = el('select', {}, [el('option', {value:'rect'}, ['กรอบสี่เหลี่ยม']), el('option', {value:'round'}, ['กรอบมุมมน']), el('option', {value:'double'}, ['กรอบคู่']), el('option', {value:'none'}, ['ไม่มีกรอบ'])]);
+        const upd = async () => {
+          txt.style.display = preset.value === '(พิมพ์เอง)' ? '' : 'none';
+          const first = preset.value === '(พิมพ์เอง)' ? (txt.value.trim() || 'ข้อความ') : preset.value;
+          const lines = [first]; if(line2.value.trim()) lines.push(line2.value.trim()); if(dateCb.checked) lines.push(thaiDate());
+          nameIn.value = lines.slice(0,2).join(' ');
+          setPrev(await renderTextStamp({lines, color:colorSel.value, style:styleSel.value}));
+        };
+        [preset, txt, line2, dateCb, styleSel, colorSel].forEach(e => e.addEventListener(e.tagName==='INPUT' && e.type==='text' ? 'input' : 'change', upd));
+        body.append(
+          el('div', {class:'field'}, [el('label', {}, ['ข้อความ']), preset, txt]),
+          el('div', {class:'field'}, [line2]),
+          el('label', {style:'display:flex;gap:8px;align-items:center;margin:0 0 12px;font-size:14px;'}, [dateCb, `ใส่วันที่วันนี้ (${thaiDate()})`]),
+          el('div', {class:'row'}, [el('div', {class:'field', style:'flex:1;min-width:130px;'}, [el('label', {}, ['กรอบ']), styleSel]), el('div', {class:'field', style:'flex:1;min-width:100px;'}, [el('label', {}, ['สี']), colorSel])]),
+        );
+        upd();
+      } else if(mode === 'receive'){
+        const org = el('input', {type:'text', placeholder:'ชื่อหน่วยงาน', value:(()=>{ try{ return localStorage.getItem('pdftools.org')||''; }catch(e){ return ''; } })()});
+        const no = el('input', {type:'text', placeholder:'เลขรับ (เว้นว่าง = เขียนเอง)'});
+        const fill = el('input', {type:'checkbox'}); fill.checked = true;
+        const upd = async () => {
+          try{ localStorage.setItem('pdftools.org', org.value); }catch(e){}
+          const lines = [org.value.trim() || 'ชื่อหน่วยงาน', 'เลขรับ ' + (no.value.trim() || '....................'),
+            'วันที่ ' + (fill.checked ? thaiDate() : '....................'), 'เวลา ' + (fill.checked ? thaiTime() : '....................')];
+          nameIn.value = 'ตรารับหนังสือ ' + (org.value.trim());
+          setPrev(await renderTextStamp({lines, color:colorSel.value, style:'rect'}));
+        };
+        [org, no].forEach(e => e.addEventListener('input', upd)); [fill, colorSel].forEach(e => e.addEventListener('change', upd));
+        body.append(
+          el('div', {class:'field'}, [el('label', {}, ['หน่วยงาน']), org]),
+          el('div', {class:'field'}, [no]),
+          el('label', {style:'display:flex;gap:8px;align-items:center;margin:0 0 12px;font-size:14px;'}, [fill, 'เติมวันที่และเวลาปัจจุบันให้อัตโนมัติ']),
+          el('div', {class:'field'}, [el('label', {}, ['สี']), colorSel]),
+        );
+        upd();
+      } else {
+        let img = null, sens = 0.18;
+        colorSel.insertBefore(el('option', {value:''}, ['สีเดิมจากรูป (เข้มขึ้น)']), colorSel.firstChild);
+        colorSel.value = '#c62828';
+        const camIn = el('input', {type:'file', accept:'image/*', capture:'environment', style:'display:none'});
+        const galIn = el('input', {type:'file', accept:'image/*', style:'display:none'});
+        const b1 = el('button', {class:'btn', type:'button'}, ['📷 ถ่ายรูปตรายาง']), b2 = el('button', {class:'btn secondary', type:'button'}, ['เลือกรูป']);
+        b1.addEventListener('click', () => camIn.click()); b2.addEventListener('click', () => galIn.click());
+        const range = el('input', {type:'range', min:'5', max:'50', value:'18'});
+        const upd = () => { if(!img) return; const r = extractSignature(img, {sens, color: colorSel.value || null, maxW:900}); setPrev(r ? r.toDataURL('image/png') : null); if(!r) toast('ไม่พบตราในรูป ลองลดค่าตัดพื้นหลัง', true); };
+        const onF = async f => { if(!f) return; img = await loadImage(await readAsDataURL(f)); nameIn.value = 'ตรายาง'; upd(); };
+        camIn.addEventListener('change', () => onF(camIn.files[0])); galIn.addEventListener('change', () => onF(galIn.files[0]));
+        range.addEventListener('change', () => { sens = range.value/100; upd(); }); colorSel.addEventListener('change', upd);
+        body.append(
+          el('div', {class:'note'}, ['ประทับตรายางลงกระดาษขาว ถ่ายในที่สว่าง ให้ตราอยู่กลางภาพ']),
+          el('div', {class:'row', style:'margin-bottom:12px;'}, [b1, b2]), camIn, galIn,
+          el('div', {class:'field'}, [el('label', {}, ['ตัดพื้นหลัง']), range]),
+          el('div', {class:'field'}, [el('label', {}, ['สีหมึก']), colorSel]),
+        );
+        setPrev(null);
+      }
+      maker.append(prev, el('div', {class:'field'}, [el('label', {}, ['ชื่อตรา']), nameIn]), save);
+    }
+    drawLib(); drawMaker();
+  }
+});
+
+/* ===================== กรอกฟอร์ม PDF ===================== */
+function wrapThaiText(ctx, text, maxW){
+  const out = [];
+  const seg = (window.Intl && Intl.Segmenter) ? new Intl.Segmenter('th', {granularity:'word'}) : null;
+  text.split('\n').forEach(para => {
+    const words = seg ? Array.from(seg.segment(para), s => s.segment) : Array.from(para);
+    let line = '';
+    words.forEach(w => {
+      if(ctx.measureText(line + w).width <= maxW || !line){ line += w; }
+      else { out.push(line.trimEnd()); line = w.trimStart(); }
+    });
+    out.push(line);
+  });
+  return out;
+}
+/* draw text into a PNG sized for a field rect (pt). returns dataUrl */
+async function fieldTextImage(text, wPt, hPt, multiline){
+  try{ await document.fonts.load('400 20px Sarabun', 'ก'); }catch(e){}
+  const S = 4, fam = "'Sarabun','Noto Sans Thai',Tahoma,sans-serif";
+  const c = document.createElement('canvas'); c.width = Math.max(4, Math.round(wPt*S)); c.height = Math.max(4, Math.round(hPt*S));
+  const x = c.getContext('2d'); x.fillStyle = '#000'; x.textBaseline = 'middle';
+  const padX = 2*S;
+  if(!multiline){
+    let fs = Math.min(hPt*0.72, 13) * S;
+    x.font = `${fs}px ${fam}`;
+    const tw = x.measureText(text).width;
+    if(tw > c.width - padX*2){ fs = fs * (c.width - padX*2) / tw; x.font = `${fs}px ${fam}`; }
+    x.fillText(text, padX, c.height/2);
+  } else {
+    let fs = Math.min(11, hPt*0.7) * S, lines;
+    for(;;){ x.font = `${fs}px ${fam}`; lines = wrapThaiText(x, text, c.width - padX*2); if(lines.length*fs*1.3 <= c.height || fs < 5*S) break; fs *= 0.9; }
+    lines.forEach((l,i) => x.fillText(l, padX, fs*0.75 + i*fs*1.3));
+  }
+  return c.toDataURL('image/png');
+}
+registerTool({
+  id:'fillform', cat:'mark', icon:'form',
+  name:'กรอกฟอร์ม PDF', desc:'พิมพ์ลงช่องในแบบฟอร์ม PDF ได้ทันที รองรับภาษาไทย',
+  longDesc:'เปิดแบบฟอร์ม PDF ที่มีช่องให้กรอก (fillable form) แล้วพิมพ์ลงช่องบนหน้าเอกสารได้เลย รองรับภาษาไทย ติ๊กช่องเลือก และเลือกจากรายการ ถ้าฟอร์มไม่มีช่องกรอก ให้ใช้เครื่องมือ "เพิ่มข้อความลง PDF" แทน',
+  render(container){
+    let srcFile = null, srcBuf = null, doc = null, pdfjsDoc = null, fields = [], current = 1, values = new Map();
+    const dz = buildDropzone({accept:'application/pdf', multiple:false, label:'เลือกแบบฟอร์ม PDF', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => { srcFile = files[0]; srcBuf = await readAsArrayBuffer(srcFile); await load(); }});
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const uiWrap = el('div'), resultWrap = el('div');
+    container.appendChild(uiWrap); container.appendChild(resultWrap);
+    async function load(){
+      uiWrap.innerHTML = ''; resultWrap.innerHTML = ''; values = new Map(); current = 1;
+      try{
+        doc = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        pdfjsDoc = await pdfjsFromBytes(new Uint8Array(srcBuf));
+      }catch(err){ uiWrap.appendChild(el('div', {class:'note warn'}, ['เปิดไฟล์ไม่ได้: ' + err.message])); return; }
+      const L = PDFLib, pages = doc.getPages();
+      const pageIndexOf = ref => pages.findIndex(p => p.ref === ref || (ref && p.ref.objectNumber === ref.objectNumber));
+      fields = [];
+      let all = [];
+      try{ all = doc.getForm().getFields(); }catch(e){}
+      all.forEach(f => {
+        let type = null;
+        if(f instanceof L.PDFTextField) type = 'text';
+        else if(f instanceof L.PDFCheckBox) type = 'check';
+        else if(f instanceof L.PDFDropdown || f instanceof L.PDFOptionList) type = 'choice';
+        else if(f instanceof L.PDFRadioGroup) type = 'radio';
+        if(!type) return;
+        if(f.isReadOnly && f.isReadOnly()) return;
+        const widgets = f.acroField.getWidgets();
+        widgets.forEach((w, wi) => {
+          let pi = pageIndexOf(w.P());
+          if(pi < 0) pi = pages.findIndex(p => (p.node.Annots() ? p.node.Annots().asArray() : []).some(a => a === doc.context.getObjectRef(w.dict)));
+          if(pi < 0) pi = 0;
+          const r = w.getRectangle();
+          let onValue = null;
+          if(type === 'radio' || type === 'check'){ try{ onValue = w.getOnValue() ? w.getOnValue().decodeText() : null; }catch(e){} }
+          if(type === 'radio'){ try{ const opts = f.getOptions(); if(opts[wi] != null) onValue = opts[wi]; }catch(e){} }
+          fields.push({f, type, page: pi+1, rect: r, wi, onValue, name: f.getName()});
+        });
+        // initial values
+        if(type === 'text') values.set(f, f.getText() || '');
+        else if(type === 'check') values.set(f, f.isChecked());
+        else if(type === 'choice'){ const s = f.getSelected(); values.set(f, s && s[0] || ''); }
+        else if(type === 'radio') values.set(f, f.getSelected() || '');
+      });
+      if(!fields.length){
+        const go = el('button', {class:'btn'}, ['ไปที่ "เพิ่มข้อความลง PDF"']);
+        go.addEventListener('click', () => openTool(TOOLS.find(t => t.id === 'stamp')));
+        uiWrap.appendChild(el('div', {class:'card'}, [el('div', {class:'note warn'}, ['ไฟล์นี้ไม่มีช่องให้กรอก (ไม่ใช่ fillable form) — ใช้เครื่องมือ "เพิ่มข้อความลง PDF" เพื่อพิมพ์ข้อความวางตรงตำแหน่งที่ต้องการแทน']), go]));
+        return;
+      }
+      drawUI();
+    }
+    let stage = null, label = null;
+    function drawUI(){
+      uiWrap.innerHTML = '';
+      const card = el('div', {class:'card'});
+      const nFields = new Set(fields.map(x => x.f)).size;
+      card.appendChild(el('div', {class:'note'}, [`พบช่องกรอก ${nFields} ช่อง — แตะที่ช่องบนเอกสารแล้วพิมพ์ได้เลย (ช่องสีฟ้า)`]));
+      const nav = el('div', {class:'pagenav'});
+      const prev = el('button', {class:'iconbtn', html:ICONS.prev}), next = el('button', {class:'iconbtn', html:ICONS.next});
+      label = el('span'); nav.append(prev, label, next);
+      prev.addEventListener('click', () => { if(current>1){ current--; drawPage(); } });
+      next.addEventListener('click', () => { if(current<pdfjsDoc.numPages){ current++; drawPage(); } });
+      if(pdfjsDoc.numPages <= 1) nav.style.display = 'none';
+      card.appendChild(nav);
+      stage = el('div', {style:'position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;'});
+      card.appendChild(stage);
+      uiWrap.appendChild(card);
+      const opt = el('input', {type:'checkbox'});
+      uiWrap.appendChild(el('label', {style:'display:flex;gap:8px;align-items:center;margin:0 0 12px;font-size:14px;'}, [opt, 'ล็อกฟอร์มหลังกรอก (คนอื่นแก้ข้อความในช่องไม่ได้)']));
+      const go = el('button', {class:'btn block'}, ['บันทึกฟอร์มที่กรอกแล้ว']);
+      go.addEventListener('click', () => save(opt.checked));
+      uiWrap.appendChild(go);
+      drawPage();
+    }
+    async function drawPage(){
+      label.textContent = `หน้า ${current} จาก ${pdfjsDoc.numPages}`;
+      stage.innerHTML = '';
+      const page = await pdfjsDoc.getPage(current);
+      const vp1 = page.getViewport({scale:1});
+      const c = await renderPageToCanvas(pdfjsDoc, current, 1000);
+      // hide pdf.js-rendered widget appearances? they render under our inputs; fine
+      const img = el('img', {src:c.toDataURL('image/jpeg', 0.85), style:'display:block;width:100%;'});
+      stage.appendChild(img);
+      const [vx0, vy0] = [page.view[0], page.view[1]];
+      fields.filter(x => x.page === current).forEach(x => {
+        const r = x.rect;
+        const left = (r.x - vx0) / vp1.width * 100, top = (vp1.height - (r.y - vy0) - r.height) / vp1.height * 100;
+        const wPct = r.width / vp1.width * 100, hPct = r.height / vp1.height * 100;
+        const pos = `position:absolute;left:${left}%;top:${top}%;width:${wPct}%;height:${hPct}%;box-sizing:border-box;`;
+        const base = 'background:rgba(214,234,255,.75);border:1px solid #6aa0e0;border-radius:2px;font-family:Sarabun,Tahoma,sans-serif;color:#000;padding:0 2px;';
+        const fsz = `font-size:calc(${Math.min(r.height*0.7, 13)} / ${vp1.width} * 100cqw);`;
+        let input;
+        if(x.type === 'text'){
+          const multi = x.f.isMultiline();
+          input = el(multi ? 'textarea' : 'input', multi ? {} : {type:'text'});
+          input.value = values.get(x.f) || '';
+          input.setAttribute('style', pos + base + fsz + (multi ? 'resize:none;line-height:1.25;' : ''));
+          input.addEventListener('input', () => { values.set(x.f, input.value); $$('[data-fname]', stage).forEach(o => { if(o !== input && o.dataset.fname === x.name) o.value = input.value; }); });
+          input.dataset.fname = x.name;
+          const ml = x.f.getMaxLength && x.f.getMaxLength(); if(ml) input.maxLength = ml;
+        } else if(x.type === 'check' || x.type === 'radio'){
+          input = el('div', {style:pos + base + 'display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:700;' + fsz.replace(/[\d.]+ \//, (r.height*0.9)+' /')});
+          const isOn = () => x.type === 'check' ? !!values.get(x.f) : (values.get(x.f) === x.onValue && x.onValue != null);
+          const paint = () => { input.textContent = isOn() ? (x.type==='check' ? '✓' : '●') : ''; };
+          paint();
+          input.addEventListener('click', () => {
+            if(x.type === 'check') values.set(x.f, !values.get(x.f));
+            else values.set(x.f, isOn() ? '' : x.onValue);
+            drawPage();
+          });
+        } else {
+          input = el('select', {style:pos + base + fsz});
+          input.appendChild(el('option', {value:''}, ['—']));
+          x.f.getOptions().forEach(o => input.appendChild(el('option', {value:o}, [o])));
+          input.value = values.get(x.f) || '';
+          input.addEventListener('change', () => values.set(x.f, input.value));
+        }
+        input.title = x.name;
+        stage.appendChild(input);
+      });
+      stage.style.containerType = 'inline-size';
+    }
+    async function save(flatten){
+      resultWrap.innerHTML = '';
+      resultWrap.appendChild(el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังบันทึก...']));
+      try{
+        // work on a fresh copy so the on-screen state stays intact
+        const out = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        const form = out.getForm(), pages = out.getPages();
+        const thai = [];
+        const done = new Set();
+        for(const x of fields){
+          if(done.has(x.name)) continue; done.add(x.name);
+          const v = values.get(x.f);
+          const f2 = form.getField(x.name);
+          if(x.type === 'text'){
+            const s = v || '';
+            if(/[^\x20-\x7E\n\r]/.test(s)){ thai.push({name:x.name, text:s, multi:f2.isMultiline()}); }
+            else f2.setText(s || undefined);
+          } else if(x.type === 'check'){ v ? f2.check() : f2.uncheck(); }
+          else if(x.type === 'choice'){ if(v) f2.select(v); else f2.clear(); }
+          else if(x.type === 'radio'){ if(v) f2.select(v); else f2.clear(); }
+        }
+        // Thai text: draw as image in each widget rect, then remove the field
+        for(const t of thai){
+          const f2 = form.getField(t.name);
+          for(const w of f2.acroField.getWidgets()){
+            const r = w.getRectangle();
+            let pi = pages.findIndex(p => w.P() && p.ref.objectNumber === w.P().objectNumber);
+            if(pi < 0) pi = fields.find(x => x.name === t.name).page - 1;
+            const png = await out.embedPng(await fetchPngBytesFromDataUrl(await fieldTextImage(t.text, r.width, r.height, t.multi)));
+            pages[pi].drawImage(png, {x:r.x, y:r.y, width:r.width, height:r.height});
+          }
+          form.removeField(f2);
+        }
+        let bytes;
+        try{
+          if(flatten) form.flatten();
+          bytes = await out.save();
+        }catch(e){
+          console.warn('appearance update failed, fallback to NeedAppearances', e);
+          form.acroForm.dict.set(PDFLib.PDFName.of('NeedAppearances'), PDFLib.PDFBool.True);
+          bytes = await out.save({updateFieldAppearances:false});
+        }
+        const name = srcFile.name.replace(/\.pdf$/i,'') + '-กรอกแล้ว.pdf';
+        resultWrap.innerHTML = '';
+        const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [name]), el('div', {class:'rsub'}, [fmtBytes(bytes.length)])])]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', () => downloadBytes(bytes, name, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+        if(thai.length) resultWrap.appendChild(el('div', {class:'note'}, ['ช่องที่กรอกภาษาไทยถูกบันทึกเป็นข้อความแบบภาพเพื่อให้แสดงผลถูกต้องทุกโปรแกรม (ช่องนั้นจะแก้ไขต่อไม่ได้)']));
+      }catch(err){ console.error(err); resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['บันทึกไม่สำเร็จ: ' + err.message])); }
+    }
+  }
+});
+
+/* ===================== ปิดทับข้อมูล (Redact) ===================== */
+registerTool({
+  id:'redact', cat:'mark', icon:'redact',
+  name:'ปิดทับข้อมูลส่วนตัว', desc:'ลากกรอบทับเลขบัตร ชื่อ ที่อยู่ แล้วลบข้อมูลใต้กรอบออกจริง',
+  longDesc:'ลากกรอบสีดำทับข้อมูลที่ไม่ต้องการเปิดเผย หน้าที่มีกรอบจะถูกแปลงเป็นภาพ ข้อมูลใต้กรอบจึงถูกลบออกจริง คัดลอกหรือค้นหาไม่ได้อีก (หน้าที่ไม่มีกรอบยังเหมือนเดิม)',
+  render(container){
+    let srcFile = null, srcBuf = null, pdfjsDoc = null, current = 1, rects = {};
+    const dz = buildDropzone({accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF ที่ต้องการปิดทับข้อมูล', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => { srcFile = files[0]; srcBuf = await readAsArrayBuffer(srcFile); rects = {}; current = 1; pdfjsDoc = await pdfjsFromBytes(new Uint8Array(srcBuf)); drawUI(); }});
+    container.appendChild(el('div', {class:'card'}, [dz]));
+    const uiWrap = el('div'), resultWrap = el('div');
+    container.appendChild(uiWrap); container.appendChild(resultWrap);
+    let stage, img, label, countEl;
+    function drawUI(){
+      uiWrap.innerHTML = ''; resultWrap.innerHTML = '';
+      const card = el('div', {class:'card'});
+      card.appendChild(el('div', {class:'note'}, ['ลากนิ้ว/เมาส์บนหน้าเอกสารเพื่อวาดกรอบสีดำทับข้อมูล (เลื่อนดูหน้าอื่นด้วยปุ่มลูกศร)']));
+      const nav = el('div', {class:'pagenav'});
+      const prev = el('button', {class:'iconbtn', html:ICONS.prev}), next = el('button', {class:'iconbtn', html:ICONS.next});
+      label = el('span'); nav.append(prev, label, next);
+      prev.addEventListener('click', () => { if(current>1){ current--; drawPage(); } });
+      next.addEventListener('click', () => { if(current<pdfjsDoc.numPages){ current++; drawPage(); } });
+      if(pdfjsDoc.numPages <= 1) nav.style.display = 'none';
+      card.appendChild(nav);
+      stage = el('div', {style:'position:relative;touch-action:none;user-select:none;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;cursor:crosshair;'});
+      img = el('img', {style:'display:block;width:100%;pointer-events:none;', draggable:'false'});
+      stage.appendChild(img); card.appendChild(stage);
+      const row = el('div', {class:'row', style:'gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;'});
+      const undo = el('button', {class:'btn secondary sm'}, ['ย้อนกรอบล่าสุด']);
+      const clr = el('button', {class:'btn secondary sm'}, ['ล้างกรอบหน้านี้']);
+      countEl = el('span', {class:'note', style:'margin:0;'});
+      undo.addEventListener('click', () => { (rects[current]||[]).pop(); drawRects(); });
+      clr.addEventListener('click', () => { rects[current] = []; drawRects(); });
+      row.append(undo, clr, countEl); card.appendChild(row);
+      uiWrap.appendChild(card);
+      const go = el('button', {class:'btn block'}, ['ปิดทับและบันทึกไฟล์']);
+      go.addEventListener('click', apply);
+      uiWrap.appendChild(go);
+      let start = null, live = null;
+      const rel = e => { const r = stage.getBoundingClientRect(); return {x: Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)), y: Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}; };
+      stage.addEventListener('pointerdown', e => { e.preventDefault(); stage.setPointerCapture(e.pointerId); start = rel(e); live = el('div', {style:'position:absolute;background:rgba(0,0,0,.75);outline:2px solid #e23;'}); stage.appendChild(live); });
+      stage.addEventListener('pointermove', e => { if(!start) return; const p = rel(e); const r = norm(start, p); Object.assign(live.style, {left:r.x*100+'%', top:r.y*100+'%', width:r.w*100+'%', height:r.h*100+'%'}); });
+      const end = e => { if(!start) return; const r = norm(start, rel(e)); start = null; live && live.remove(); live = null;
+        if(r.w > 0.008 && r.h > 0.005){ (rects[current] = rects[current]||[]).push(r); } drawRects(); };
+      stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+      drawPage();
+    }
+    const norm = (a, b) => ({x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(a.x-b.x), h:Math.abs(a.y-b.y)});
+    async function drawPage(){
+      label.textContent = `หน้า ${current} จาก ${pdfjsDoc.numPages}`;
+      const c = await renderPageToCanvas(pdfjsDoc, current, 900);
+      img.src = c.toDataURL('image/jpeg', 0.85);
+      drawRects();
+    }
+    function drawRects(){
+      $$('.rbox', stage).forEach(n => n.remove());
+      (rects[current]||[]).forEach(r => stage.appendChild(el('div', {class:'rbox', style:`position:absolute;left:${r.x*100}%;top:${r.y*100}%;width:${r.w*100}%;height:${r.h*100}%;background:#000;`})));
+      const total = Object.values(rects).reduce((s,a)=>s+a.length,0);
+      const pages = Object.values(rects).filter(a=>a.length).length;
+      countEl.textContent = total ? `ทั้งหมด ${total} กรอบ ใน ${pages} หน้า` : 'ยังไม่มีกรอบ';
+    }
+    async function apply(){
+      const pagesWith = Object.keys(rects).filter(k => rects[k].length).map(Number);
+      if(!pagesWith.length){ toast('ยังไม่ได้วาดกรอบ', true); return; }
+      resultWrap.innerHTML = '';
+      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังปิดทับข้อมูล...']);
+      resultWrap.appendChild(status);
+      try{
+        const src = await PDFLib.PDFDocument.load(srcBuf, {ignoreEncryption:true});
+        const out = await PDFLib.PDFDocument.create();
+        const n = src.getPageCount();
+        for(let i=1;i<=n;i++){
+          if(rects[i] && rects[i].length){
+            status.lastChild.textContent = `กำลังแปลงหน้า ${i}...`;
+            const page = await pdfjsDoc.getPage(i);
+            const vp1 = page.getViewport({scale:1});
+            const scale = Math.min(2.8, 2600 / Math.max(vp1.width, vp1.height));
+            const vp = page.getViewport({scale});
+            const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+            const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,c.width,c.height);
+            await page.render({canvasContext: cx, viewport: vp}).promise;
+            cx.fillStyle = '#000';
+            rects[i].forEach(r => cx.fillRect(Math.floor(r.x*c.width)-1, Math.floor(r.y*c.height)-1, Math.ceil(r.w*c.width)+2, Math.ceil(r.h*c.height)+2));
+            const jpg = await out.embedJpg(await fetchPngBytesFromDataUrl(c.toDataURL('image/jpeg', 0.9)));
+            const p = out.addPage([vp1.width, vp1.height]);
+            p.drawImage(jpg, {x:0, y:0, width:vp1.width, height:vp1.height});
+          } else {
+            const [cp] = await out.copyPages(src, [i-1]); out.addPage(cp);
+          }
+        }
+        const bytes = await out.save();
+        const name = srcFile.name.replace(/\.pdf$/i,'') + '-ปิดทับ.pdf';
+        resultWrap.innerHTML = '';
+        const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [name]), el('div', {class:'rsub'}, [`${fmtBytes(bytes.length)} • ปิดทับ ${pagesWith.length} หน้า`])])]);
+        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด PDF']);
+        dl.addEventListener('click', () => downloadBytes(bytes, name, 'application/pdf'));
+        box.appendChild(dl); resultWrap.appendChild(box);
+      }catch(err){ console.error(err); resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['ปิดทับไม่สำเร็จ: ' + err.message])); }
+    }
+  }
+});
+
+/* ===================== รับไฟล์ที่แชร์มาจากแอปอื่น (Android share target) ===================== */
+function fileMatchesAccept(file, accept){
+  if(!accept) return true;
+  const name = (file.name||'').toLowerCase(), type = (file.type||'').toLowerCase();
+  return accept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).some(a => {
+    if(a.startsWith('.')) return name.endsWith(a);
+    if(a.endsWith('/*')) return type.startsWith(a.slice(0,-1));
+    return type === a;
+  });
+}
+async function readSharedInbox(){
+  if(!('caches' in window)) return [];
+  const cache = await caches.open('pdf2-share-inbox');
+  const keys = await cache.keys(), files = [];
+  for(const k of keys){
+    const r = await cache.match(k); if(!r) continue;
+    const blob = await r.blob();
+    files.push(new File([blob], decodeURIComponent(r.headers.get('X-Name') || 'ไฟล์'), {type: r.headers.get('Content-Type') || blob.type}));
+    await cache.delete(k);
+  }
+  return files;
+}
+function showSharedPicker(files){
+  const main = $('#main'); main.innerHTML = '';
+  main.appendChild(el('div', {class:'tool-header'}, [el('div', {class:'tool-title'}, ['ไฟล์ที่แชร์มา']), el('div', {class:'tool-sub'}, ['เลือกเครื่องมือที่ต้องการใช้กับไฟล์นี้'])]));
+  const list = el('div', {class:'filelist'});
+  files.forEach(f => list.appendChild(el('div', {class:'file-item'}, [el('span', {class:'fname'}, [f.name]), el('span', {class:'fsize'}, [fmtBytes(f.size)])])));
+  main.appendChild(list);
+  const tools = TOOLS.filter(t => !t.disabled && t.accepts && files.every(f => fileMatchesAccept(f, t.accepts)));
+  if(!tools.length){ main.appendChild(el('div', {class:'note warn'}, ['ยังไม่มีเครื่องมือที่รองรับไฟล์ชนิดนี้'])); }
+  const tl = el('div', {class:'tool-list'});
+  tools.forEach(t => {
+    const row = el('button', {class:'tool-row', type:'button'}, [el('span', {class:'tool-icon'}, [iconChip(t.icon)]), el('div', {class:'tool-text'}, [el('div', {class:'tool-name'}, [t.name]), el('div', {class:'tool-desc'}, [t.desc])]), el('span', {class:'chevron', html:ICONS.next})]);
+    row.addEventListener('click', () => { window.__sharedFiles = files; openTool(t); });
+    tl.appendChild(row);
+  });
+  main.appendChild(tl);
+  const home = el('button', {class:'btn ghost', style:'margin-top:16px;'}, ['ไปหน้ารวมเครื่องมือ']);
+  home.addEventListener('click', renderHome); main.appendChild(home);
+}
+async function handleShareLaunch(){
+  if(!/[?&]shared=1/.test(location.search)) return false;
+  try{ history.replaceState(null, '', location.pathname); }catch(e){}
+  const files = await readSharedInbox();
+  if(!files.length){ toast('ไม่พบไฟล์ที่แชร์มา', true); return false; }
+  showSharedPicker(files);
+  return true;
+}
+
+/* ===================== Tool registry & navigation ===================== */
+/* Each tool: id, cat, name, desc, icon, disabled(optional), render(container) */
+
+function renderHome(){
+  const main = $('#main');
+  main.innerHTML = '';
+  main.appendChild(el('p', {class:'intro'}, ['รวมเครื่องมือจัดการเอกสาร PDF ไว้ในที่เดียว — สแกน รวม แยก แปลง และลงชื่อเอกสาร ใช้ได้จากมือถือหรือคอมพิวเตอร์เครื่องไหนก็ได้ ไม่ต้องติดตั้งโปรแกรมเพิ่ม']));
+  CATEGORIES.forEach(cat => {
+    main.appendChild(el('div', {class:'category-label'}, [cat.label]));
+    const list = el('div', {class:'tool-list'});
+    TOOLS.filter(t => t.cat === cat.id).forEach(t => {
+      const row = el('button', {class:'tool-row', type:'button'}, [
+        el('span', {class:'tool-icon'}, [iconChip(t.icon)]),
+        el('div', {class:'tool-text'}, [
+          el('div', {class:'tool-name'}, [t.name, t.disabled ? el('span',{class:'badge'},['เร็วๆ นี้']) : null]),
+          el('div', {class:'tool-desc'}, [t.desc]),
+        ]),
+        el('span', {class:'chevron', html: t.disabled ? '' : ICONS.next}),
+      ]);
+      if(t.disabled){ row.disabled = true; }
+      else row.addEventListener('click', () => openTool(t));
+      list.appendChild(row);
+    });
+    main.appendChild(list);
+  });
+}
+
+function openTool(t){
+  const main = $('#main');
+  main.innerHTML = '';
+  const back = el('button', {class:'back-link', type:'button'}, [iconChip('back'), ' กลับไปหน้ารวมเครื่องมือ']);
+  back.addEventListener('click', renderHome);
+  main.appendChild(back);
+  const header = el('div', {class:'tool-header'}, [
+    el('div', {class:'tool-title'}, [t.name]),
+    el('div', {class:'tool-sub'}, [t.longDesc || t.desc]),
+  ]);
+  main.appendChild(header);
+  const body = el('div');
+  main.appendChild(body);
+  try{
+    t.render(body);
+  }catch(err){
+    console.error(err);
+    body.appendChild(el('div', {class:'note warn'}, ['เกิดข้อผิดพลาด: ' + err.message]));
+  }
+  window.scrollTo(0,0);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if(!window.PDFLib){ toast('โหลดไลบรารี PDF ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', true); }
+  renderHome();
+  try{ await handleShareLaunch(); }catch(e){ console.error(e); }
+});
+
+</script>
+</body>
+</html>
