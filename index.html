@@ -1134,6 +1134,163 @@ registerTool({
   }
 });
 
+/* ===================== Thai text repair for PDF text extraction =====================
+   1) Glyphs missing from the font's ToUnicode map but covered by /ActualText spans (LibreOffice, some printers)
+   2) Thai presentation forms in the Private Use Area (U+F700–F71A, common with Windows Thai fonts) */
+const PdfTextFix = (() => {
+  const PUA = {0xF700:'ฐ',0xF701:'ิ',0xF702:'ี',0xF703:'ึ',0xF704:'ื',0xF705:'่',0xF706:'้',0xF707:'๊',0xF708:'๋',0xF709:'์',
+    0xF70A:'่',0xF70B:'้',0xF70C:'๊',0xF70D:'๋',0xF70E:'์',0xF70F:'ญ',0xF710:'ั',0xF711:'ํ',0xF712:'็',0xF713:'่',0xF714:'้',
+    0xF715:'๊',0xF716:'๋',0xF717:'์',0xF718:'ุ',0xF719:'ู',0xF71A:'ฺ'};
+  function normalize(s){ return s.replace(/[-]/g, c => PUA[c.charCodeAt(0)] || '').replace(/ํา/g, 'ำ'); }
+  const stripSubset = n => String(n||'').replace(/^\//,'').replace(/^[A-Z]{6}\+/, '');
+  const u16 = h => { let o = ''; for(let i=0;i+4<=h.length;i+=4) o += String.fromCharCode(parseInt(h.substr(i,4),16)); return o; };
+  function parseToUnicode(text){
+    const map = new Map(); let bpc = 1;
+    const cs = text.match(/begincodespacerange\s*<([0-9a-fA-F]+)>/); if(cs) bpc = Math.max(1, cs[1].length/2);
+    for(const blk of text.matchAll(/beginbfchar([\s\S]*?)endbfchar/g))
+      for(const m of blk[1].matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]*)>/g)) map.set(parseInt(m[1],16), u16(m[2]));
+    for(const blk of text.matchAll(/beginbfrange([\s\S]*?)endbfrange/g))
+      for(const m of blk[1].matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*(\[[^\]]*\]|<[0-9a-fA-F]*>)/g)){
+        const a = parseInt(m[1],16), b = parseInt(m[2],16);
+        if(m[3][0] === '['){ const list = [...m[3].matchAll(/<([0-9a-fA-F]*)>/g)].map(x => u16(x[1])); for(let c=a;c<=b && c-a<list.length;c++) map.set(c, list[c-a]); }
+        else { const base = m[3].slice(1,-1); const head = base.slice(0,-4), last = parseInt(base.slice(-4)||'0',16); for(let c=a;c<=b && c-a<4096;c++) map.set(c, u16(head) + String.fromCharCode(last + c - a)); }
+      }
+    return {map, bpc};
+  }
+  /* minimal content-stream tokenizer */
+  function* tokens(s){
+    let i = 0; const n = s.length;
+    const ws = c => c === ' ' || c === '\n' || c === '\r' || c === '\t' || c === '\f' || c === '\0';
+    const delim = c => '()<>[]{}/%'.includes(c);
+    function value(){
+      while(i < n){ const c = s[i]; if(ws(c)) i++; else if(c === '%'){ while(i < n && s[i] !== '\n' && s[i] !== '\r') i++; } else break; }
+      if(i >= n) return null;
+      const c = s[i];
+      if(c === '('){ i++; let depth = 1, out = [];
+        while(i < n && depth){ let ch = s[i++];
+          if(ch === '\\'){ const e = s[i++]; const M = {n:10, r:13, t:9, b:8, f:12};
+            if(e in M) out.push(M[e]); else if(e >= '0' && e <= '7'){ let o = e; while(o.length < 3 && s[i] >= '0' && s[i] <= '7') o += s[i++]; out.push(parseInt(o,8) & 255); }
+            else if(e === '\r'){ if(s[i] === '\n') i++; } else if(e !== '\n') out.push(e.charCodeAt(0)); }
+          else if(ch === '('){ depth++; out.push(40); } else if(ch === ')'){ depth--; if(depth) out.push(41); } else out.push(ch.charCodeAt(0)); }
+        return {t:'str', v:out}; }
+      if(c === '<' && s[i+1] === '<'){ i += 2; const d = {}; for(;;){ const k = value(); if(!k || k.t === 'end>>') break; const v = value(); if(k.t === 'name') d[k.v] = v; } return {t:'dict', v:d}; }
+      if(c === '>' && s[i+1] === '>'){ i += 2; return {t:'end>>'}; }
+      if(c === '<'){ i++; let h = ''; while(i < n && s[i] !== '>'){ if(!ws(s[i])) h += s[i]; i++; } i++; if(h.length % 2) h += '0'; const out = []; for(let k=0;k<h.length;k+=2) out.push(parseInt(h.substr(k,2),16)); return {t:'str', v:out}; }
+      if(c === '['){ i++; const a = []; for(;;){ const v = value(); if(!v || v.t === 'end]') break; a.push(v); } return {t:'arr', v:a}; }
+      if(c === ']'){ i++; return {t:'end]'}; }
+      if(c === '/'){ i++; let nm = ''; while(i < n && !ws(s[i]) && !delim(s[i])) nm += s[i++]; return {t:'name', v:nm}; }
+      let w = ''; while(i < n && !ws(s[i]) && !delim(s[i])) w += s[i++];
+      if(!w){ i++; return {t:'junk'}; }
+      if(/^[+-]?(\d+\.?\d*|\.\d+)$/.test(w)) return {t:'num', v:+w};
+      return {t:'op', v:w};
+    }
+    while(i < n){
+      const v = value(); if(!v) break;
+      if(v.t === 'op' && v.v === 'BI'){ const at = s.indexOf('ID', i); const end = s.slice(at+3).search(/\sEI(\s|$)/); i = end < 0 ? n : at + 3 + end + 3; continue; }
+      yield v;
+    }
+  }
+  const pdfText = bytes => (bytes[0] === 0xFE && bytes[1] === 0xFF)
+    ? Array.from({length:(bytes.length-2)>>1}, (_,k) => String.fromCharCode((bytes[2+2*k]<<8) | bytes[3+2*k])).join('')
+    : String.fromCharCode(...bytes);
+  /* returns {baseFontName(without subset prefix): Map(code -> text)} for glyphs ToUnicode leaves out */
+  function pageFixes(libPage){
+    const L = PDFLib, out = {}, seq = [];
+    out.__seq = seq;
+    try{
+      const res = libPage.node.Resources(); if(!res) return out;
+      const fontsDict = res.lookup(L.PDFName.of('Font')); if(!(fontsDict instanceof L.PDFDict)) return out;
+      const fonts = {};
+      for(const [nm, ref] of fontsDict.entries()){
+        const fd = libPage.doc.context.lookup(ref); if(!(fd instanceof L.PDFDict)) continue;
+        const base = stripSubset(fd.lookup(L.PDFName.of('BaseFont'))?.toString());
+        const tu = fd.lookup(L.PDFName.of('ToUnicode'));
+        let info = {map:new Map(), bpc: fd.lookup(L.PDFName.of('Subtype'))?.toString() === '/Type0' ? 2 : 1};
+        if(tu instanceof L.PDFRawStream){ try{ const p = parseToUnicode(new TextDecoder('latin1').decode(L.decodePDFRawStream(tu).decode())); info = {map:p.map, bpc:p.bpc}; }catch(e){} }
+        fonts[nm.toString().slice(1)] = {base, ...info};
+      }
+      let contents = libPage.node.Contents(); if(!contents) return out;
+      const streams = contents instanceof L.PDFArray ? contents.asArray().map(r => libPage.doc.context.lookup(r)) : [contents];
+      let src = '';
+      for(const st of streams){ if(st instanceof L.PDFRawStream) src += new TextDecoder('latin1').decode(L.decodePDFRawStream(st).decode()) + '\n'; }
+      let font = null; const spans = []; let ops = [];
+      const codesOf = bytes => { const f = fonts[font]; if(!f) return []; const r = []; for(let k=0;k+f.bpc<=bytes.length;k+=f.bpc){ let c = 0; for(let j=0;j<f.bpc;j++) c = (c<<8) | bytes[k+j]; r.push(c); } return r; };
+      const show = bytes => {
+        const codes = codesOf(bytes), f = fonts[font];
+        const top = [...spans].reverse().find(sp => sp.actual != null);
+        codes.forEach(c => {
+          const o = f && f.map.has(c) ? f.map.get(c) : (f && f.bpc === 1 ? String.fromCharCode(c) : '\u0000');
+          if(top){ if(top.first == null) top.first = seq.length; top.last = seq.length; }
+          seq.push({out:o, fix:o});
+        });
+        if(top){ top.font = top.font || font; if(top.font === font) top.codes.push(...codes); }
+      };
+      for(const tk of tokens(src)){
+        if(tk.t !== 'op'){ ops.push(tk); continue; }
+        const op = tk.v;
+        if(op === 'Tf' && ops[0] && ops[0].t === 'name') font = ops[0].v;
+        else if(op === 'BDC'){ const p = ops[1]; const at = p && p.t === 'dict' && p.v.ActualText; spans.push({actual: at && at.t === 'str' ? pdfText(at.v) : null, codes:[], font:null}); }
+        else if(op === 'BMC') spans.push({actual:null, codes:[]});
+        else if(op === 'EMC'){
+          const sp = spans.pop();
+          if(sp && sp.actual != null && sp.first != null){ seq[sp.first].fix = sp.actual; for(let k=sp.first+1;k<=sp.last;k++) seq[k].fix = ''; }
+          if(sp && sp.actual != null && sp.codes.length && fonts[sp.font]){
+            const f = fonts[sp.font], parts = sp.codes.map(c => f.map.get(c));
+            const unknown = parts.map((p,k) => (p == null || /[\u0000-\u001F]/.test(p)) ? k : -1).filter(k => k >= 0);
+            const actual = sp.actual.replace(/\u0E33/g, '\u0E4D\u0E32');
+            const known = parts.map(p => p == null ? p : p.replace(/\u0E33/g, '\u0E4D\u0E32'));
+            if(unknown.length === 1){
+              const k = unknown[0], pre = known.slice(0,k).join(''), suf = known.slice(k+1).join('');
+              if(actual.startsWith(pre) && actual.endsWith(suf) && actual.length > pre.length + suf.length){
+                (out[f.base] = out[f.base] || new Map()).set(sp.codes[k], actual.slice(pre.length, actual.length - suf.length));
+              }
+            } else if(unknown.length > 1 && unknown.length === sp.codes.length && [...actual].length === sp.codes.length){
+              [...actual].forEach((ch, k) => (out[f.base] = out[f.base] || new Map()).set(sp.codes[k], ch));
+            }
+          }
+        }
+        else if(op === 'Tj' || op === "'"){ const a = ops[ops.length-1]; if(a && a.t === 'str') show(a.v); }
+        else if(op === '"'){ const a = ops[2]; if(a && a.t === 'str') show(a.v); }
+        else if(op === 'TJ'){ const a = ops[0]; if(a && a.t === 'arr') a.v.forEach(x => { if(x.t === 'str') show(x.v); }); }
+        ops = [];
+      }
+    }catch(e){ console.warn('text fix', e); }
+    return out;
+  }
+  /* repair one pdf.js text item string */
+  function fixStr(str, fixMap){
+    if(fixMap) str = str.replace(/[\u0001-\u007F]/g, c => fixMap.has(c.charCodeAt(0)) ? fixMap.get(c.charCodeAt(0)) : (c < ' ' ? '' : c));
+    else str = str.replace(/[\u0001-\u001F]/g, '');
+    return normalize(str.replace(/\u0000/g, ''));
+  }
+  /* walks pdf.js text items in stream order, swapping each glyph's text for its /ActualText */
+  function aligner(seq){
+    let gi = 0, ok = !!(seq && seq.length), last = '';
+    const thai = c => /[\u0E00-\u0E7F]/.test(c || '');
+    return str => {
+      if(!ok) return null;
+      let out = '', j = 0;
+      while(j < str.length){
+        const g = seq[gi];
+        if(g && g.out && str.startsWith(g.out, j)){ out += g.fix; if(g.fix) last = g.fix.slice(-1); j += g.out.length; gi++; continue; }
+        if(g && !g.out){ gi++; continue; }
+        if(str[j] === ' ' || str[j] === '\u0000'){
+          // a space pdf.js inserted (no space glyph in the file): Thai marks with offsets cause many false ones
+          const nx = seq.slice(gi, gi+3).find(x => x.fix);
+          if(str[j] === ' ' && !(thai(last) && nx && thai(nx.fix[0]))){ out += ' '; last = ' '; }
+          j++; continue;
+        }
+        let found = -1;
+        for(let k=gi+1; k<Math.min(seq.length, gi+40); k++) if(seq[k].out && str.startsWith(seq[k].out, j)){ found = k; break; }
+        if(found >= 0){ gi = found; continue; }
+        ok = false; return null;
+      }
+      return out;
+    };
+  }
+  return {pageFixes, fixStr, normalize, stripSubset, aligner};
+})();
+
 /* ===================== DOCX builder (no library) ===================== */
 const DocxLib = (() => {
   const enc = new TextEncoder();
@@ -1172,187 +1329,745 @@ const DocxLib = (() => {
     return new Blob([...parts, ...central, new Uint8Array(end.buffer)],
       {type: type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
   }
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g,'');
   const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
-  const FONT = 'Tahoma';
-  function runXml(text, sz, bold){
-    const rpr = `<w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}" w:eastAsia="${FONT}"/>${bold?'<w:b/><w:bCs/>':''}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
-    const segs = text.split('\t'); let out = '';
-    segs.forEach((s,i) => { if(i>0) out += `<w:r>${rpr}<w:tab/></w:r>`; if(s) out += `<w:r>${rpr}<w:t xml:space="preserve">${esc(s)}</w:t></w:r>`; });
+  const DEFAULT_FONT = 'Tahoma';
+  function rPr(sz, bold, font){
+    const f = esc(font || DEFAULT_FONT);
+    return `<w:rPr><w:rFonts w:ascii="${f}" w:hAnsi="${f}" w:cs="${f}" w:eastAsia="${f}"/>${bold?'<w:b/><w:bCs/>':''}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
+  }
+  function runXml(text, sz, bold, font){
+    const rpr = rPr(sz, bold, font);
+    let out = '';
+    String(text).split('\n').forEach((line, li) => {
+      if(li > 0) out += `<w:r>${rpr}<w:br/></w:r>`;
+      line.split('\t').forEach((s,i) => { if(i>0) out += `<w:r>${rpr}<w:tab/></w:r>`; if(s) out += `<w:r>${rpr}<w:t xml:space="preserve">${esc(s)}</w:t></w:r>`; });
+    });
     return out;
   }
-  // blocks: {type:'p', text, sz, bold, pageBreakBefore, after} | {type:'img', rid, wEmu, hEmu, id, pageBreakBefore}
-  // opts: pageW, pageH (twips), margin (twips)
-  function build(blocks, images, opts){
-    const m = opts.margin;
-    let body = '';
-    for(const b of blocks){
-      if(b.type==='p'){
-        body += `<w:p><w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}<w:spacing w:before="0" w:after="${b.after??120}" w:line="${b.line??276}" w:lineRule="auto"/>${b.ind>8?`<w:ind w:left="${Math.min(6000,Math.round(b.ind*20))}"/>`:''}</w:pPr>${runXml(b.text,b.sz||28,b.bold)}</w:p>`;
-      } else if(b.type==='img'){
-        body += `<w:p><w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${b.wEmu}" cy="${b.hEmu}"/><wp:docPr id="${b.id}" name="Page ${b.id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${b.id}" name="page${b.id}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${b.rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${b.wEmu}" cy="${b.hEmu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+  let drawId = 1;
+  function drawingXml(rid, wEmu, hEmu){
+    const id = drawId++;
+    return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${wEmu}" cy="${hEmu}"/><wp:docPr id="${id}" name="Picture ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="image${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${wEmu}" cy="${hEmu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  }
+  function pPr(b, extraSpacing){
+    const ind = b.ind > 8 ? `<w:ind w:left="${Math.min(9000, Math.round(b.ind))}"/>` : '';
+    const jc = b.jc ? `<w:jc w:val="${b.jc}"/>` : '';
+    const sp = extraSpacing || `<w:spacing w:before="0" w:after="${Math.max(0, Math.round(b.after ?? 120))}" w:line="${b.line ?? 276}" w:lineRule="auto"/>`;
+    return `<w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}${sp}${ind}${jc}</w:pPr>`;
+  }
+  function paraXml(b){ return `<w:p>${pPr(b)}${runXml(b.text||'', b.sz||28, b.bold, b.font)}</w:p>`; }
+  function imgParaXml(b){
+    return `<w:p>${pPr(b, `<w:spacing w:before="0" w:after="${Math.max(0, Math.round(b.after ?? 0))}" w:line="240" w:lineRule="auto"/>`).replace('</w:pPr>', '<w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>')}${drawingXml(b.rid, b.wEmu, b.hEmu)}</w:p>`;
+  }
+  /* table: {colW:[twips], rowH:[twips], ind, cells:[{r,c,rs,cs,paras:[{text,sz,bold,font,jc}|{img:{rid,wEmu,hEmu}}]}], pageBreakBefore} */
+  const TCB = '<w:tcBorders>' + ['top','left','bottom','right'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('') + '</w:tcBorders>';
+  function tableXml(t){
+    const rows = t.rowH.length, cols = t.colW.length;
+    const owner = Array.from({length:rows}, () => new Array(cols).fill(null));
+    t.cells.forEach(c => { for(let r=c.r; r<c.r+c.rs; r++) for(let k=c.c; k<c.c+c.cs; k++) if(owner[r] && k<cols) owner[r][k] = c; });
+    const B = ['top','left','bottom','right','insideH','insideV'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('');
+    const total = t.colW.reduce((a,b)=>a+b, 0);
+    let x = `<w:tbl><w:tblPr><w:tblW w:w="${total}" w:type="dxa"/>${t.ind ? `<w:tblInd w:w="${Math.round(t.ind)}" w:type="dxa"/>` : ''}<w:tblBorders>${B}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="0000"/></w:tblPr><w:tblGrid>${t.colW.map(w => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+    for(let r=0; r<rows; r++){
+      x += `<w:tr><w:trPr><w:trHeight w:val="${Math.max(200, Math.round(t.rowH[r]*0.92))}" w:hRule="atLeast"/></w:trPr>`;
+      for(let c=0; c<cols; ){
+        const cell = owner[r][c];
+        if(!cell){ x += `<w:tc><w:tcPr><w:tcW w:w="${t.colW[c]}" w:type="dxa"/>${TCB}</w:tcPr><w:p/></w:tc>`; c++; continue; }
+        const span = Math.min(cell.cs, cols - c), w = t.colW.slice(c, c+span).reduce((a,b)=>a+b,0);
+        const gs = span > 1 ? `<w:gridSpan w:val="${span}"/>` : '';
+        if(cell.r === r){
+          const vm = cell.rs > 1 ? '<w:vMerge w:val="restart"/>' : '';
+          const ps = (cell.paras && cell.paras.length) ? cell.paras.map(p => p.img
+              ? `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/>${p.jc?`<w:jc w:val="${p.jc}"/>`:''}</w:pPr>${drawingXml(p.img.rid, p.img.wEmu, p.img.hEmu)}</w:p>`
+              : `<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>${p.jc?`<w:jc w:val="${p.jc}"/>`:''}</w:pPr>${runXml(p.text, p.sz||24, p.bold, p.font)}</w:p>`).join('') : '<w:p/>';
+          x += `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${gs}${vm}${TCB}<w:vAlign w:val="${cell.vAlign||'top'}"/></w:tcPr>${ps}</w:tc>`;
+        } else {
+          x += `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${gs}<w:vMerge/>${TCB}</w:tcPr><w:p/></w:tc>`;
+        }
+        c += span;
       }
+      x += '</w:tr>';
     }
-    const sect = `<w:sectPr><w:pgSz w:w="${opts.pageW}" w:h="${opts.pageH}"/><w:pgMar w:top="${m}" w:right="${m}" w:bottom="${m}" w:left="${m}" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>`;
+    return x + '</w:tbl>';
+  }
+  // blocks: p | img | table ; opts: pageW, pageH (twips), margin or marginL/marginR/marginT/marginB (twips)
+  function build(blocks, images, opts){
+    drawId = 1;
+    const mL = opts.marginL ?? opts.margin, mR = opts.marginR ?? opts.margin, mT = opts.marginT ?? opts.margin, mB = opts.marginB ?? opts.margin;
+    let body = '';
+    blocks.forEach((b, i) => {
+      if(b.type === 'p') body += paraXml(b);
+      else if(b.type === 'img') body += imgParaXml(b);
+      else if(b.type === 'table'){
+        if(b.pageBreakBefore) body += `<w:p><w:pPr><w:pageBreakBefore/><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr></w:p>`;
+        body += tableXml(b);
+        // Word needs a paragraph between tables and before the section end
+        body += `<w:p><w:pPr><w:spacing w:before="0" w:after="${Math.max(0, Math.round(b.after ?? 120))}" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="8"/></w:rPr></w:pPr></w:p>`;
+      }
+    });
+    const sect = `<w:sectPr><w:pgSz w:w="${opts.pageW}" w:h="${opts.pageH}"${opts.pageW > opts.pageH ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${mT}" w:right="${mR}" w:bottom="${mB}" w:left="${mL}" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>`;
     const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}${sect}</w:body></w:document>`;
-    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}" w:eastAsia="${FONT}"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="en-US" w:bidi="th-TH"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${DEFAULT_FONT}" w:hAnsi="${DEFAULT_FONT}" w:cs="${DEFAULT_FONT}" w:eastAsia="${DEFAULT_FONT}"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="en-US" w:bidi="th-TH"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
     let rels = `<Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`;
     const files = [];
     images.forEach(im => { rels += `<Relationship Id="${im.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${im.name}"/>`; files.push({name:'word/media/'+im.name, data:im.data}); });
-    const enc2 = s => enc.encode(s);
+    const e2 = s => enc.encode(s);
     return zip([
-      {name:'[Content_Types].xml', data:enc2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`)},
-      {name:'_rels/.rels', data:enc2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`)},
-      {name:'word/document.xml', data:enc2(docXml)},
-      {name:'word/styles.xml', data:enc2(styles)},
-      {name:'word/_rels/document.xml.rels', data:enc2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`)},
+      {name:'[Content_Types].xml', data:e2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`)},
+      {name:'_rels/.rels', data:e2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`)},
+      {name:'word/document.xml', data:e2(docXml)},
+      {name:'word/styles.xml', data:e2(styles)},
+      {name:'word/_rels/document.xml.rels', data:e2(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`)},
       ...files,
     ]);
   }
   return {build, zip};
 })();
 
-/* Group pdf.js text items of one page into paragraphs */
-function pdfTextToParagraphs(items, pageH){
-  const isThai = ch => /[฀-๿]/.test(ch);
-  const lines = []; let cur = null;
-  for(const it of items){
-    if(!it.str && !it.hasEOL) continue;
-    const x = it.transform[4], y = it.transform[5];
-    const h = Math.abs(it.transform[3]) || it.height || 10;
-    if(!it.str.trim() && !cur) continue;
-    if(!cur || Math.abs(y - cur.y) > Math.max(h,cur.h)*0.45){
-      cur = {y, h, x0:x, endX:x, text:'', hs:[]};
-      lines.push(cur);
+/* ===================== PDF layout analysis: text, tables, images (text PDFs and scans) ===================== */
+const PdfLayout = (() => {
+  const isThai = ch => /[฀-๿]/.test(ch || '');
+  const joinThai = (a, b) => (isThai(a.slice(-1)) || isThai(b[0])) ? '' : ' ';
+  const median = arr => { if(!arr.length) return 0; const s = [...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; };
+
+  /* ---------- line segments -> tables ---------- */
+  function mergeSegs(segs, tol){
+    segs = segs.filter(s => s.e > s.s).sort((p,q) => p.pos - q.pos);
+    const groups = [];
+    for(const g of segs){
+      const last = groups[groups.length-1];
+      if(last && g.pos - last.maxPos <= tol){ last.items.push(g); last.maxPos = g.pos; }
+      else groups.push({items:[g], maxPos:g.pos});
     }
-    if(it.str){
-      const gap = x - cur.endX;
-      if(cur.text){
-        const last = cur.text.slice(-1), first = it.str[0];
-        if(gap > h*1.8) cur.text += '\t';
-        else if(gap > h*0.18 && !isThai(last) && !isThai(first) && !/\s$/.test(cur.text) && !/^\s/.test(it.str)) cur.text += ' ';
+    const out = [];
+    for(const gr of groups){
+      const its = gr.items.sort((p,q) => p.s - q.s);
+      let cur = null;
+      for(const s of its){
+        if(cur && s.s <= cur.e + tol*2){ cur.e = Math.max(cur.e, s.e); cur.sum += s.pos*(s.e-s.s); cur.len += (s.e-s.s); }
+        else { cur = {s:s.s, e:s.e, sum:s.pos*(s.e-s.s), len:(s.e-s.s)}; out.push(cur); }
       }
-      cur.text += it.str; cur.hs.push(h*it.str.length);
-      cur.endX = Math.max(cur.endX, x + (it.width||0));
-      cur.h = h;
     }
+    return out.map(c => ({pos: c.len ? c.sum/c.len : 0, s:c.s, e:c.e}));
   }
-  const ls = lines.filter(l => l.text.trim());
-  if(!ls.length) return [];
-  const maxEnd = Math.max(...ls.map(l=>l.endX)), minX = Math.min(...ls.map(l=>l.x0));
-  const paras = [];
-  let p = null, prev = null;
-  for(const l of ls){
-    const sz = Math.max(16, Math.min(96, Math.round(l.h*2*0.98)));
-    const gap = prev ? (prev.y - l.y) : 0;
-    const wrapped = prev && gap > 0 && gap < l.h*1.7 && prev.endX > minX + (maxEnd-minX)*0.82 && !prev.text.includes('\t') && Math.abs(prev.h - l.h) < 1.5 && Math.abs(l.x0 - prev.x0) < l.h*3;
-    if(wrapped && p){
-      const j = (isThai(p.text.slice(-1)) || isThai(l.text[0])) ? '' : ' ';
-      p.text += j + l.text.trim();
-    } else {
-      const indent = Math.max(0, Math.round(l.x0 - minX));
-      p = {type:'p', text: l.text.replace(/\s+$/,''), sz, after: prev && gap > l.h*2.2 ? 240 : 80, ind: indent};
-      paras.push(p);
+  function clusterVals(vals, d){
+    const s = [...vals].sort((a,b)=>a-b), out = [];
+    let grp = [];
+    for(const v of s){ if(grp.length && v - grp[grp.length-1] > d){ out.push(grp.reduce((a,b)=>a+b,0)/grp.length); grp = []; } grp.push(v); }
+    if(grp.length) out.push(grp.reduce((a,b)=>a+b,0)/grp.length);
+    return out;
+  }
+  /* H: [{pos:y, s:x1, e:x2}], V: [{pos:x, s:y1, e:y2}] in one unit system (pt or px) */
+  function buildTables(H, V, o){
+    H = mergeSegs(H, o.tol).filter(l => l.e - l.s >= o.minLen);
+    V = mergeSegs(V, o.tol).filter(l => l.e - l.s >= o.minLen*0.4);
+    const n = H.length + V.length, parent = Array.from({length:n}, (_,i) => i);
+    const find = i => { while(parent[i] !== i){ parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    const t2 = o.tol*3;
+    for(let i=0;i<H.length;i++) for(let j=0;j<V.length;j++){
+      const h = H[i], v = V[j];
+      if(v.pos >= h.s - t2 && v.pos <= h.e + t2 && h.pos >= v.s - t2 && h.pos <= v.e + t2){ const a = find(i), b = find(H.length+j); if(a !== b) parent[a] = b; }
     }
-    prev = l;
+    const groups = {};
+    H.forEach((h,i) => { const r = find(i); (groups[r] = groups[r] || {h:[], v:[]}).h.push(h); });
+    V.forEach((v,j) => { const r = find(H.length+j); (groups[r] = groups[r] || {h:[], v:[]}).v.push(v); });
+    const tables = [];
+    const touches = (h, v) => v.pos >= h.s - t2 && v.pos <= h.e + t2 && h.pos >= v.s - t2 && h.pos <= v.e + t2;
+    for(const g of Object.values(groups)){
+      g.v = g.v.filter(v => g.h.filter(h => touches(h, v)).length >= 2);
+      if(g.h.length < 2 || g.v.length < 1) continue;
+      let ys = clusterVals(g.h.map(l => l.pos), o.minCell);
+      let xs = clusterVals(g.v.map(l => l.pos), o.minCell);
+      const hx0 = Math.min(...g.h.map(l => l.s)), hx1 = Math.max(...g.h.map(l => l.e));
+      if(hx0 < xs[0] - o.minCell) xs.unshift(hx0);
+      if(hx1 > xs[xs.length-1] + o.minCell) xs.push(hx1);
+      const vy0 = Math.min(...g.v.map(l => l.s)), vy1 = Math.max(...g.v.map(l => l.e));
+      if(vy0 < ys[0] - o.minCell) ys.unshift(vy0);
+      if(vy1 > ys[ys.length-1] + o.minCell) ys.push(vy1);
+      if(ys.length < 2 || xs.length < 2) continue;
+      const rows = ys.length-1, cols = xs.length-1;
+      if(rows*cols < 2 || rows*cols > 4000) continue;
+      const W = xs[cols]-xs[0], Hh = ys[rows]-ys[0];
+      if(W*Hh > o.pageW*o.pageH*0.9 && rows*cols < 6) continue; // page frame
+      const near = o.minCell*0.7;
+      const hasV = (k, r) => { const y0 = ys[r], y1 = ys[r+1], ym = (y0+y1)/2, need = Math.min((y1-y0)*0.3, o.tol*4); return g.v.some(l => Math.abs(l.pos - xs[k]) <= near && l.s <= ym - need + (y1-y0)*0.2 && l.e >= ym + need - (y1-y0)*0.2); };
+      const hasH = (k, c) => { const x0 = xs[c], x1 = xs[c+1], xm = (x0+x1)/2; return g.h.some(l => Math.abs(l.pos - ys[k]) <= near && l.s <= xm && l.e >= xm); };
+      const owner = Array.from({length:rows}, () => new Array(cols).fill(null));
+      const cells = [];
+      for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+        if(owner[r][c]) continue;
+        let c2 = c; while(c2+1 < cols && !owner[r][c2+1] && !hasV(c2+1, r)) c2++;
+        let r2 = r;
+        while(r2+1 < rows){ let open = true; for(let k=c;k<=c2;k++) if(owner[r2+1][k] || hasH(r2+1, k)){ open = false; break; } if(!open) break; r2++; }
+        const cell = {r, c, rs:r2-r+1, cs:c2-c+1, x0:xs[c], x1:xs[c2+1], y0:ys[r], y1:ys[r2+1], items:[], imgs:[]};
+        for(let a=r;a<=r2;a++) for(let b=c;b<=c2;b++) owner[a][b] = cell;
+        cells.push(cell);
+      }
+      if(cells.length < 2) continue;
+      tables.push({xs, ys, cells, x0:xs[0], x1:xs[cols], y0:ys[0], y1:ys[rows], hLines:g.h, vLines:g.v});
+    }
+    // drop tables nested inside other tables (keep the outer, finer one is usually the same grid)
+    return tables.filter(t => !tables.some(u => u !== t && u.x0 <= t.x0+1 && u.x1 >= t.x1-1 && u.y0 <= t.y0+1 && u.y1 >= t.y1-1 && (u.x1-u.x0)*(u.y1-u.y0) > (t.x1-t.x0)*(t.y1-t.y0)));
   }
-  return paras;
-}
+  function cellAt(tables, x, y){
+    for(const t of tables){
+      if(x < t.x0 || x > t.x1 || y < t.y0 || y > t.y1) continue;
+      for(const c of t.cells) if(x >= c.x0 && x < c.x1 && y >= c.y0 && y < c.y1) return c;
+      return t.cells[0];
+    }
+    return null;
+  }
+
+  /* ---------- text items -> lines -> paragraphs (top-left coords, any unit) ---------- */
+  function groupLines(items){
+    const lines = []; let cur = null;
+    let pendingSpace = false;
+    for(const it of items){
+      if(!it.str) continue;
+      if(!it.str.trim()){ if(cur) pendingSpace = true; continue; }   // decide on spaces when the next text arrives
+      if(!cur || Math.abs(it.y - cur.y) > Math.max(it.h, cur.h)*0.5 || it.x < cur.endX - Math.max(it.h, cur.h)*3){
+        cur = {y:it.y, h:it.h, x0:it.x, endX:it.x, text:'', chars:0, boldChars:0, fonts:{}};
+        lines.push(cur); pendingSpace = false;
+      }
+      if(cur.text){
+        const gap = it.x - cur.endX, last = cur.text.slice(-1), first = it.str.trimStart()[0];
+        const bothThai = isThai(last) && isThai(first);
+        if(gap > cur.h*1.8) cur.text += '\t';
+        else if(pendingSpace ? !(bothThai && gap < cur.h*0.2) : (gap > cur.h*0.2 && !isThai(last) && !isThai(first))){ if(!/\s$/.test(cur.text)) cur.text += ' '; }
+      }
+      pendingSpace = false;
+      cur.text += it.str;
+      cur.endX = Math.max(cur.endX, it.x + (it.w||0)); cur.x0 = Math.min(cur.x0, it.x);
+      const n = it.str.replace(/\s/g,'').length;
+      if(n){ cur.chars += n; if(it.bold) cur.boldChars += n; if(it.font) cur.fonts[it.font] = (cur.fonts[it.font]||0) + n; cur.h = Math.max(cur.h*0.5, it.h) > cur.h ? it.h : cur.h; }
+    }
+    return lines.filter(l => l.text.trim()).map(l => {
+      const f = Object.entries(l.fonts).sort((a,b) => b[1]-a[1])[0];
+      return Object.assign(l, {text: l.text.replace(/\s+$/,'').replace(/\u0000/g,''), bold: l.boldChars > l.chars*0.6, font: f ? f[0] : null});
+    });
+  }
+  function sortLines(lines){
+    return lines.sort((a,b) => Math.abs(a.y - b.y) < Math.min(a.h, b.h)*0.5 ? a.x0 - b.x0 : a.y - b.y);
+  }
+  /* returns paragraphs {text, h, bold, font, x0, x1, top, bottom, nLines, lineGap} */
+  function linesToParas(lines){
+    if(!lines.length) return [];
+    sortLines(lines);
+    const minX = Math.min(...lines.map(l => l.x0)), maxEnd = Math.max(...lines.map(l => l.endX));
+    const paras = []; let p = null, prev = null;
+    for(const l of lines){
+      const gap = prev ? l.y - prev.y : 0;
+      const wrapped = p && prev && gap > 0 && gap < l.h*1.9 && prev.endX > minX + (maxEnd-minX)*0.8 && !prev.text.includes('\t')
+        && Math.abs(prev.h - l.h) < Math.max(1.5, l.h*0.15) && l.x0 < p.x0 + l.h*3 && l.x0 > p.x0 - l.h*3 && prev.bold === l.bold;
+      if(wrapped){ p.text += joinThai(p.text, l.text.trim()) + l.text.trim(); p.nLines++; p.gaps.push(gap); p.x1 = Math.max(p.x1, l.endX); p.bottom = l.y + l.h*0.3; }
+      else { p = {text:l.text, h:l.h, bold:l.bold, font:l.font, x0:l.x0, x1:l.endX, top:l.y - l.h, bottom:l.y + l.h*0.3, nLines:1, gaps:[]}; paras.push(p); }
+      prev = l;
+    }
+    paras.forEach(p => { p.lineGap = p.gaps.length ? median(p.gaps) : 0; });
+    return paras;
+  }
+  function alignOf(x0, x1, boxX0, boxX1, h){
+    const W = boxX1 - boxX0, left = x0 - boxX0, right = boxX1 - x1;
+    if(W <= 0) return null;
+    if(left > h*0.8 && Math.abs(left - right) < Math.max(W*0.08, h*1.2)) return 'center';
+    if(right < Math.max(h*0.6, W*0.03) && left > W*0.3) return 'right';
+    return null;
+  }
+  function cellParas(cell, unitToPt, defFont){
+    const lines = sortLines(groupLines(cell.items));
+    const out = []; let p = null, prev = null;
+    const W = cell.x1 - cell.x0;
+    for(const l of lines){
+      const wrapped = p && prev && (l.y - prev.y) < l.h*1.9 && prev.endX > cell.x1 - W*0.28 && prev.bold === l.bold;
+      if(wrapped){ p.text += joinThai(p.text, l.text.trim()) + l.text.trim(); p.x1 = Math.max(p.x1, l.endX); }
+      else { p = {text:l.text.trim(), h:l.h, bold:l.bold, font:l.font || defFont, x0:l.x0, x1:l.endX}; out.push(p); }
+      prev = l;
+    }
+    return out.map(p => ({text:PdfTextFix.normalize(p.text), sz:Math.max(12, Math.min(72, Math.round(p.h*unitToPt*2))), bold:p.bold, font:p.font, jc:alignOf(p.x0, p.x1, cell.x0, cell.x1, p.h)}));
+  }
+
+  /* ---------- PDF font names -> Word font names ---------- */
+  function wordFont(name){
+    if(!name) return null;
+    let n = String(name).replace(/^[A-Z]{6}\+/, '').replace(/[-,](Bold|Italic|BoldItalic|Regular|Oblique|BoldOblique|Black|Light|Medium|Semibold|SemiBold)\b.*$/i, '').replace(/(PSMT|PS|MT)$/,'');
+    const map = [[/sarabun\s*new/i,'TH Sarabun New'],[/sarabunpsk|sarabun\s*psk/i,'TH SarabunPSK'],[/sarabun/i,'TH Sarabun New'],[/angsana/i,'Angsana New'],[/cordia/i,'Cordia New'],[/browallia/i,'Browallia New'],
+      [/tahoma/i,'Tahoma'],[/arial/i,'Arial'],[/times/i,'Times New Roman'],[/calibri/i,'Calibri'],[/cambria/i,'Cambria'],[/leelawadee/i,'Leelawadee UI'],[/notosansthai/i,'Noto Sans Thai'],[/helvetica/i,'Arial'],[/courier/i,'Courier New']];
+    for(const [re, v] of map) if(re.test(n)) return v;
+    return null;
+  }
+
+  /* ---------- walk the operator list: vector lines and image placements ---------- */
+  async function scanOps(page, vp){
+    const ol = await page.getOperatorList();
+    const O = pdfjsLib.OPS, U = pdfjsLib.Util;
+    let ctm = [1,0,0,1,0,0]; const stack = [];
+    const H = [], V = [], imgs = [];
+    const dev = (x, y) => U.applyTransform(U.applyTransform([x, y], ctm), vp.transform);
+    const addSeg = (p, q) => {
+      const dx = Math.abs(p[0]-q[0]), dy = Math.abs(p[1]-q[1]);
+      if(dy < 1 && dx > 2) H.push({pos:(p[1]+q[1])/2, s:Math.min(p[0],q[0]), e:Math.max(p[0],q[0])});
+      else if(dx < 1 && dy > 2) V.push({pos:(p[0]+q[0])/2, s:Math.min(p[1],q[1]), e:Math.max(p[1],q[1])});
+    };
+    const addThin = (x0, y0, x1, y1) => {
+      const w = x1-x0, h = y1-y0;
+      if(w <= 3.5 && h > 2) V.push({pos:(x0+x1)/2, s:y0, e:y1});
+      else if(h <= 3.5 && w > 2) H.push({pos:(y0+y1)/2, s:x0, e:x1});
+    };
+    const bbox = pts => { const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+    const STROKE = new Set([O.stroke, O.closeStroke, O.fillStroke, O.eoFillStroke, O.closeFillStroke, O.closeEOFillStroke]);
+    const FILL = new Set([O.fill, O.eoFill, O.fillStroke, O.eoFillStroke, O.closeFillStroke, O.closeEOFillStroke]);
+    const fns = ol.fnArray, args = ol.argsArray;
+    for(let i=0;i<fns.length;i++){
+      const fn = fns[i], a = args[i];
+      if(fn === O.save) stack.push(ctm.slice());
+      else if(fn === O.restore) ctm = stack.pop() || ctm;
+      else if(fn === O.transform) ctm = U.transform(ctm, a);
+      else if(fn === O.paintFormXObjectBegin){ stack.push(ctm.slice()); if(a && a[0]) ctm = U.transform(ctm, a[0]); }
+      else if(fn === O.paintFormXObjectEnd) ctm = stack.pop() || ctm;
+      else if(fn === O.paintImageXObject || fn === O.paintInlineImageXObject || fn === O.paintJpegXObject || fn === O.paintImageMaskXObject || fn === O.paintImageXObjectRepeat){
+        const [x0,y0,x1,y1] = bbox([[0,0],[1,0],[0,1],[1,1]].map(p => dev(p[0], p[1])));
+        imgs.push({x0, y0, x1, y1, mask: fn === O.paintImageMaskXObject});
+      }
+      else if(fn === O.constructPath){
+        const paint = fns[i+1];
+        const stroked = STROKE.has(paint), filled = FILL.has(paint);
+        if(!stroked && !filled) continue;
+        const sub = a[0], co = a[1]; let k = 0, cur = null, start = null, poly = [];
+        const flush = () => { if(filled && poly.length >= 3){ const b = bbox(poly); addThin(b[0], b[1], b[2], b[3]); } poly = []; };
+        for(const op of sub){
+          if(op === O.rectangle){
+            const x = co[k], y = co[k+1], w = co[k+2], h = co[k+3]; k += 4;
+            const pts = [dev(x,y), dev(x+w,y), dev(x+w,y+h), dev(x,y+h)];
+            const b = bbox(pts);
+            if(filled && (b[2]-b[0] <= 3.5 || b[3]-b[1] <= 3.5)) addThin(b[0], b[1], b[2], b[3]);
+            else if(stroked){ addSeg(pts[0],pts[1]); addSeg(pts[1],pts[2]); addSeg(pts[2],pts[3]); addSeg(pts[3],pts[0]); }
+          }
+          else if(op === O.moveTo){ flush(); cur = dev(co[k], co[k+1]); start = cur; poly.push(cur); k += 2; }
+          else if(op === O.lineTo){ const p = dev(co[k], co[k+1]); k += 2; if(stroked && cur) addSeg(cur, p); cur = p; poly.push(p); }
+          else if(op === O.curveTo){ k += 6; cur = dev(co[k-2], co[k-1]); poly.push(cur); }
+          else if(op === O.curveTo2 || op === O.curveTo3){ k += 4; cur = dev(co[k-2], co[k-1]); poly.push(cur); }
+          else if(op === O.closePath){ if(stroked && cur && start) addSeg(cur, start); cur = start; }
+        }
+        flush();
+      }
+    }
+    return {H, V, imgs};
+  }
+  function mergeRects(rs, gap){
+    rs = rs.map(r => ({...r}));
+    let changed = true;
+    while(changed){
+      changed = false;
+      outer: for(let i=0;i<rs.length;i++) for(let j=i+1;j<rs.length;j++){
+        const a = rs[i], b = rs[j];
+        if(a.x0 <= b.x1 + gap && b.x0 <= a.x1 + gap && a.y0 <= b.y1 + gap && b.y0 <= a.y1 + gap){
+          a.x0 = Math.min(a.x0,b.x0); a.y0 = Math.min(a.y0,b.y0); a.x1 = Math.max(a.x1,b.x1); a.y1 = Math.max(a.y1,b.y1);
+          rs.splice(j,1); changed = true; break outer;
+        }
+      }
+    }
+    return rs;
+  }
+  const inside = (x, y, r) => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1;
+
+  /* ---------- page from a text PDF ---------- */
+  async function textPage(page, fixes){
+    const vp = page.getViewport({scale:1});
+    const ops = await scanOps(page, vp);           // also loads fonts into commonObjs
+    const tc = await page.getTextContent();
+    const fontCache = {};
+    const fontOf = id => {
+      if(id in fontCache) return fontCache[id];
+      let info = {bold:false, family:null, base:''};
+      try{ const f = page.commonObjs.get(id); const nm = (f && (f.name || f.loadedName)) || ''; info = {bold: !!(f && (f.bold || f.black)) || /bold|black|heavy/i.test(nm), family: wordFont(nm), base: PdfTextFix.stripSubset(nm)}; }catch(e){}
+      return (fontCache[id] = info);
+    };
+    const U = pdfjsLib.Util;
+    const align = fixes && fixes.__seq ? PdfTextFix.aligner(fixes.__seq) : null;
+    if(fixes) delete fixes.__seq;
+    const items = tc.items.filter(it => typeof it.str === 'string').map(it => {
+      const m = U.transform(vp.transform, it.transform);
+      const h = Math.hypot(m[2], m[3]) || Math.abs(it.height) || 10;
+      const fi = fontOf(it.fontName);
+      let fx = fixes && fixes[fi.base];
+      if(!fx && fixes){ const ks = Object.keys(fixes); if(ks.length === 1) fx = fixes[ks[0]]; }
+      const raw = it.str; let str = align ? align(raw) : null;
+      str = str != null ? PdfTextFix.normalize(str.replace(/[\u0000-\u001F]/g,'')) : PdfTextFix.fixStr(raw, fx);
+      // trailing/leading spaces carry width; keep the box tight around the visible text
+      const lead = raw.length - raw.trimStart().length, trail = raw.length - raw.trimEnd().length, per = raw.length ? it.width/raw.length : 0;
+      return {str, x: m[4] + lead*per, y: m[5], h, w: Math.max(0, it.width - (lead+trail)*per), bold: fi.bold, font: fi.family};
+    });
+    const chars = items.reduce((s,i) => s + i.str.replace(/[\s\u0000]/g,'').length, 0);
+    return {vp, items, chars, ops};
+  }
+  function layoutTextPage(tp){
+    const {vp, items, ops} = tp, W = vp.width, Hh = vp.height;
+    const tables = buildTables(ops.H, ops.V, {tol:1.5, minLen:12, minCell:4, pageW:W, pageH:Hh});
+    let imgs = ops.imgs.filter(r => (r.x1-r.x0) >= 10 && (r.y1-r.y0) >= 10 && !(r.mask && (r.x1-r.x0) < 40));
+    imgs = imgs.map(r => ({x0:Math.max(0,r.x0), y0:Math.max(0,r.y0), x1:Math.min(W,r.x1), y1:Math.min(Hh,r.y1)})).filter(r => r.x1 > r.x0 && r.y1 > r.y0);
+    imgs = mergeRects(imgs, 2).filter(r => (r.x1-r.x0)*(r.y1-r.y0) < W*Hh*0.75);   // full-page backgrounds are dropped
+    const flow = [];
+    for(const it of items){
+      if(!it.str) continue;
+      const cx = it.x + (it.w||0)/2, cy = it.y - it.h*0.35;
+      if(imgs.some(r => inside(cx, cy, r))) continue;                // text drawn on a picture stays in the picture
+      const cell = cellAt(tables, cx, cy);
+      if(cell) cell.items.push(it); else flow.push(it);
+    }
+    const free = [];
+    imgs.forEach(r => { const cell = cellAt(tables, (r.x0+r.x1)/2, (r.y0+r.y1)/2); if(cell) cell.imgs.push(r); else free.push(r); });
+    return {W, H:Hh, unitToPt:1, tables, imgs:free, paras: linesToParas(groupLines(flow))};
+  }
+
+  /* ---------- scanned page (image only) ---------- */
+  function grayOf(canvas){
+    const d = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, canvas.width, canvas.height).data;
+    const g = new Uint8ClampedArray(canvas.width*canvas.height);
+    for(let i=0;i<g.length;i++) g[i] = (d[i*4]*77 + d[i*4+1]*150 + d[i*4+2]*29) >> 8;
+    return g;
+  }
+  /* even out lighting/shadows: divide by a blurred background estimate */
+  function normalize(g, w, h){
+    const r = Math.max(15, Math.round(Math.min(w, h)/30));
+    const hist = new Uint32Array(256); for(let i=0;i<g.length;i+=7) hist[g[i]]++;
+    let acc = 0, tot = 0; for(let i=0;i<256;i++) tot += hist[i];
+    let p80 = 255; for(let i=0;i<256;i++){ acc += hist[i]; if(acc >= tot*0.8){ p80 = i; break; } }
+    const floor = p80*0.85, W1 = w+1, I = new Float64Array(W1*(h+1));
+    for(let y=0;y<h;y++){ let row = 0; for(let x=0;x<w;x++){ row += Math.max(g[y*w+x], floor); I[(y+1)*W1+x+1] = I[y*W1+x+1] + row; } }
+    const out = new Uint8ClampedArray(w*h);
+    for(let y=0;y<h;y++){ const y0 = Math.max(0,y-r), y1 = Math.min(h,y+r+1);
+      for(let x=0;x<w;x++){ const x0 = Math.max(0,x-r), x1 = Math.min(w,x+r+1);
+        const bg = (I[y1*W1+x1]-I[y0*W1+x1]-I[y1*W1+x0]+I[y0*W1+x0])/((x1-x0)*(y1-y0));
+        out[y*w+x] = Math.min(255, g[y*w+x] / Math.max(1, bg) * 262); } }
+    return out;
+  }
+  /* long dark horizontal/vertical runs -> line segments (tolerates gaps and slight skew) */
+  function detectLines(g, w, h, minH, minV){
+    const dark = 180, gapTol = 3;
+    const runs = (len, get) => { const out = []; let s = -1, lastDark = -10;
+      for(let i=0;i<len;i++){ if(get(i) < dark){ if(s < 0 || i - lastDark > gapTol + 1) { if(s >= 0 && lastDark - s >= 0) out.push([s, lastDark]); s = i; } lastDark = i; } }
+      if(s >= 0) out.push([s, lastDark]); return out; };
+    const collect = (nLines, len, get, minLen) => {
+      const active = [], done = [];
+      for(let a=0;a<nLines;a++){
+        const rs = runs(len, i => get(a, i)).filter(r => r[1]-r[0] >= minLen*0.5);
+        for(const [s,e] of rs){
+          let hit = null;
+          for(const L of active){ if(a - L.last <= 2 && s <= L.e + 8 && e >= L.s - 8){ hit = L; break; } }
+          if(hit){ if(s < hit.s){ hit.s = s; hit.sRow = a; } if(e > hit.e){ hit.e = e; hit.eRow = a; } hit.last = a; hit.sum += a*(e-s); hit.len += (e-s); hit.rows++; }
+          else active.push({s, e, last:a, first:a, sum:a*(e-s), len:(e-s), rows:1, sRow:a, eRow:a});
+        }
+        for(let k=active.length-1;k>=0;k--) if(a - active[k].last > 2) done.push(...active.splice(k,1));
+      }
+      done.push(...active);
+      // a ruling line is thin and nearly solid along its length; rows of text are not
+      const solid = L => { let hit = 0, n = 0;
+        for(let i=L.s; i<=L.e; i+=2){ n++; const c = Math.round(L.sRow + (L.eRow - L.sRow)*((i - L.s)/Math.max(1, L.e - L.s))); let d = false;
+          for(let o=-2; o<=2 && !d; o++){ const a = c + o; if(a >= 0 && a < nLines && get(a, i) < dark) d = true; } if(d) hit++; }
+        return n && hit/n >= 0.9; };
+      return done.filter(L => L.e - L.s >= minLen && (L.last - L.first) <= Math.max(14, (L.e - L.s)*0.03) && L.len/Math.max(1, L.e - L.s) <= 10 && solid(L))
+                 .map(L => ({pos:L.sum/Math.max(1,L.len), s:L.s, e:L.e, t0:L.first, t1:L.last}));
+    };
+    const Hs = collect(h, w, (y, x) => g[y*w+x], minH);
+    const Vs = collect(w, h, (x, y) => g[y*w+x], minV);
+    return {Hs, Vs};
+  }
+  function detectPhotos(g, w, h, tables){
+    const C = Math.max(12, Math.round(w/90)), gw = Math.ceil(w/C), gh = Math.ceil(h/C);
+    const m = new Uint8Array(gw*gh);
+    for(let cy=0;cy<gh;cy++) for(let cx=0;cx<gw;cx++){
+      let mid = 0, n = 0;
+      for(let y=cy*C; y<Math.min(h,(cy+1)*C); y+=2) for(let x=cx*C; x<Math.min(w,(cx+1)*C); x+=2){ const v = g[y*w+x]; n++; if(v > 35 && v < 215) mid++; }
+      if(n && mid/n > 0.38) m[cy*gw+cx] = 1;
+    }
+    // close small holes
+    const d = new Uint8Array(gw*gh);
+    for(let y=0;y<gh;y++) for(let x=0;x<gw;x++){ if(m[y*gw+x]) continue; let k = 0; if(x>0&&m[y*gw+x-1])k++; if(x<gw-1&&m[y*gw+x+1])k++; if(y>0&&m[(y-1)*gw+x])k++; if(y<gh-1&&m[(y+1)*gw+x])k++; if(k>=3) d[y*gw+x]=1; }
+    for(let i=0;i<m.length;i++) if(d[i]) m[i] = 1;
+    const seen = new Uint8Array(gw*gh), rects = [];
+    for(let i=0;i<m.length;i++){
+      if(!m[i] || seen[i]) continue;
+      const q = [i]; seen[i] = 1; let x0 = gw, y0 = gh, x1 = 0, y1 = 0, cnt = 0;
+      while(q.length){ const j = q.pop(), x = j % gw, y = (j / gw) | 0; cnt++;
+        if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx = x+dx, ny = y+dy; if(nx<0||ny<0||nx>=gw||ny>=gh) continue; const k = ny*gw+nx; if(m[k] && !seen[k]){ seen[k] = 1; q.push(k); } } }
+      const r = {x0:x0*C, y0:y0*C, x1:Math.min(w,(x1+1)*C), y1:Math.min(h,(y1+1)*C), fill: cnt/((x1-x0+1)*(y1-y0+1))};
+      const A = (r.x1-r.x0)*(r.y1-r.y0);
+      if((r.x1-r.x0) > w*0.06 && (r.y1-r.y0) > h*0.035 && A > w*h*0.006 && A < w*h*0.85 && r.fill > 0.45) rects.push(r);
+    }
+    return mergeRects(rects, C).filter(r => !tables.some(t => {
+      const ix = Math.max(0, Math.min(r.x1,t.x1) - Math.max(r.x0,t.x0)), iy = Math.max(0, Math.min(r.y1,t.y1) - Math.max(r.y0,t.y0));
+      return ix*iy > (r.x1-r.x0)*(r.y1-r.y0)*0.3;
+    }));
+  }
+  async function scanPage(page, worker){
+    const vp1 = page.getViewport({scale:1});
+    const s = Math.min(300/72, 3300/Math.max(vp1.width, vp1.height));
+    const vp = page.getViewport({scale:s});
+    const canvas = document.createElement('canvas'); canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+    const cx = canvas.getContext('2d', {willReadFrequently:true}); cx.fillStyle = '#fff'; cx.fillRect(0,0,canvas.width,canvas.height);
+    await page.render({canvasContext:cx, viewport:vp}).promise;
+    const w = canvas.width, h = canvas.height;
+    const g = normalize(grayOf(canvas), w, h);
+    const {Hs, Vs} = detectLines(g, w, h, Math.max(50, w*0.04), Math.max(30, h*0.012));
+    const tables = buildTables(Hs, Vs, {tol:Math.max(3, w/700), minLen:Math.max(50, w*0.04), minCell:Math.max(14, w/110), pageW:w, pageH:h});
+    const photos = detectPhotos(g, w, h, tables);
+    // OCR input: evened-out gray with ruling lines erased (lines confuse the reader inside tables)
+    const oc = document.createElement('canvas'); oc.width = w; oc.height = h;
+    const ox = oc.getContext('2d'); const id = ox.createImageData(w, h);
+    for(let i=0;i<g.length;i++){ const v = g[i] > 200 ? 255 : g[i]; id.data[i*4] = id.data[i*4+1] = id.data[i*4+2] = v; id.data[i*4+3] = 255; }
+    ox.putImageData(id, 0, 0); ox.fillStyle = '#fff';
+    // erase only ruling lines that belong to a detected table
+    const tolL = Math.max(4, w/500);
+    const isRule = (l, list) => list.some(m => Math.abs(m.pos - l.pos) <= tolL*2 && l.s >= m.s - tolL*3 && l.e <= m.e + tolL*3);
+    Hs.forEach(l => { if(tables.some(t => isRule(l, t.hLines))) ox.fillRect(l.s - 2, Math.min(l.t0, l.t1) - 3, l.e - l.s + 4, Math.abs(l.t1 - l.t0) + 7); });
+    Vs.forEach(l => { if(tables.some(t => isRule(l, t.vLines))) ox.fillRect(Math.min(l.t0, l.t1) - 3, l.s - 2, Math.abs(l.t1 - l.t0) + 7, l.e - l.s + 4); });
+    const {data} = await worker.recognize(oc, {}, {blocks:true, text:true});
+    const lines = [];
+    (data.blocks||[]).forEach(b => (b.paragraphs||[]).forEach(p => (p.lines||[]).forEach(l => lines.push(l))));
+    const confs = lines.map(l => l.confidence).sort((a,b)=>a-b);
+    const cut = Math.max(45, (confs[Math.floor(confs.length/2)] || 0) - 30);
+    // a "photo" that is mostly covered by confidently read words is really text (e.g. coloured headings)
+    for(let k=photos.length-1;k>=0;k--){
+      const r = photos[k]; let cover = 0;
+      lines.forEach(l => { if(l.confidence < cut) return; (l.words||[]).forEach(wd => { const b = wd.bbox, cx = (b.x0+b.x1)/2, cy = (b.y0+b.y1)/2; if(inside(cx, cy, r) && wd.confidence >= 50) cover += (b.x1-b.x0)*(b.y1-b.y0); }); });
+      if(cover > (r.x1-r.x0)*(r.y1-r.y0)*0.2) photos.splice(k, 1);
+    }
+    const fix = t => t.replace(/ํา/g, 'ำ').replace(/\s+$/,'');
+    const flowLines = [];
+    for(const l of lines){
+      if(!(l.confidence >= cut || (l.confidence >= 30 && l.text.replace(/\s/g,'').length > 12))) continue;
+      const words = (l.words || []).filter(wd => wd.text && wd.text.trim());
+      const lh = (l.bbox.y1 - l.bbox.y0);
+      const fh = lh*0.78, base = l.bbox.y1 - lh*0.18;
+      const keep = [];
+      for(const wd of words){
+        const wx = (wd.bbox.x0 + wd.bbox.x1)/2, wy = (wd.bbox.y0 + wd.bbox.y1)/2;
+        const cell = cellAt(tables, wx, wy);
+        if(cell){ cell.items.push({str:fix(wd.text), x:wd.bbox.x0, y:base, h:fh, w:wd.bbox.x1 - wd.bbox.x0}); continue; }
+        if(photos.some(r => inside(wx, wy, r))) continue;
+        keep.push(wd);
+      }
+      if(!keep.length) continue;
+      const text = keep.length === words.length ? fix(l.text.trim()) : fix(keep.map((wd, k) => (k && wd.bbox.x0 - keep[k-1].bbox.x1 > fh*0.33 ? ' ' : '') + wd.text).join(''));
+      flowLines.push({text, y:base, h:fh, x0:Math.min(...keep.map(wd => wd.bbox.x0)), endX:Math.max(...keep.map(wd => wd.bbox.x1)), bold:false, font:null});
+    }
+    // cell items must read word by word with spaces (tesseract words are space-separated chunks)
+    tables.forEach(t => t.cells.forEach(c => { c.items.sort((a,b) => Math.abs(a.y-b.y) < a.h*0.5 ? a.x - b.x : a.y - b.y); c.items.forEach((it, i) => { const nx = c.items[i+1]; if(nx && Math.abs(nx.y - it.y) < it.h*0.5 && (nx.x - (it.x + it.w)) > it.h*0.33) it.str += ' '; }); }));
+    // OCR line boxes vary with Thai upper/lower marks: snap near-median heights to one body size
+    const med = median(flowLines.map(l => l.h));
+    flowLines.forEach(l => { if(med && l.h/med > 0.5 && l.h/med < 1.22) l.h = med; });
+    tables.forEach(t => { const hs = []; t.cells.forEach(c => c.items.forEach(it => hs.push(it.h))); const m = median(hs); t.cells.forEach(c => c.items.forEach(it => { if(m && it.h/m > 0.5 && it.h/m < 1.3) it.h = m; })); });
+    return {W:w, H:h, unitToPt:1/s, tables, imgs:photos, paras:linesToParas(flowLines), canvas, ocrChars:flowLines.reduce((n,l) => n + l.text.length, 0)};
+  }
+  return {textPage, layoutTextPage, scanPage, cellParas, alignOf, median, _dbg:{grayOf, normalize, detectLines, buildTables, detectPhotos}};
+})();
 
 /* ===================== PDF → Word ===================== */
 registerTool({
   id:'pdf2word', cat:'convert', icon:'pdf2word',
-  name:'PDF → Word', desc:'แปลง PDF เป็นไฟล์ Word (.docx)',
-  longDesc:'แปลงไฟล์ PDF เป็นเอกสาร Word ทำงานในเครื่องคุณทั้งหมด ไม่อัปโหลดไฟล์ไปไหน โหมด "ข้อความ" ดึงตัวหนังสือมาให้แก้ไขได้ (ใช้กับ PDF ที่พิมพ์/สร้างจากคอมพิวเตอร์) ส่วนโหมด "รูปหน้า" ใส่แต่ละหน้าเป็นรูปภาพเหมือนต้นฉบับ (ใช้กับ PDF ที่สแกนมา)',
+  name:'PDF → Word', desc:'แปลง PDF เป็น Word (.docx) — ได้ทั้งข้อความ ตาราง และรูปภาพ รวมถึงไฟล์สแกน',
+  longDesc:'แปลง PDF เป็นเอกสาร Word ที่แก้ไขได้ ตัวหนังสือเป็นย่อหน้า ตารางที่มีเส้นกรอบกลายเป็นตาราง Word (รวมช่องที่ผสานกัน) และรูปภาพถูกตัดมาวางตามตำแหน่ง หน้าที่เป็นไฟล์สแกนหรือรูปถ่ายจะอ่านด้วย OCR (ไทย+อังกฤษ) ทำงานในเครื่องทั้งหมด ไม่อัปโหลดไฟล์ไปไหน',
   render(container){
-    let mode = 'text', srcFile = null, buf = null;
-    const dz = buildDropzone({
-      accept:'application/pdf', multiple:false,
-      label:'เลือกไฟล์ PDF ที่ต้องการแปลงเป็น Word', sub:'เลือกไฟล์ PDF',
-      onFiles: async (files) => {
-        const f = files[0]; if(!f) return;
-        srcFile = f; buf = await readAsArrayBuffer(f); drawUI();
-      }
-    });
+    let mode = 'smart', useOcr = true, srcFile = null, buf = null;
+    const dz = buildDropzone({accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF ที่ต้องการแปลงเป็น Word', sub:'เลือกไฟล์ PDF',
+      onFiles: async (files) => { const f = files[0]; if(!f) return; srcFile = f; buf = await readAsArrayBuffer(f); drawUI(); }});
     container.appendChild(el('div', {class:'card'}, [dz]));
-    const formWrap = el('div'); container.appendChild(formWrap);
-    const resultWrap = el('div'); container.appendChild(resultWrap);
-
+    const formWrap = el('div'), resultWrap = el('div');
+    container.appendChild(formWrap); container.appendChild(resultWrap);
     function drawUI(){
       formWrap.innerHTML = ''; resultWrap.innerHTML = '';
       const card = el('div', {class:'card'});
       card.appendChild(el('div', {class:'note'}, [`ไฟล์: ${srcFile.name} (${fmtBytes(srcFile.size)})`]));
       const sel = el('select', {}, [
-        el('option', {value:'text'}, ['ข้อความ — แก้ไขได้ (PDF ที่ไม่ใช่ไฟล์สแกน)']),
-        el('option', {value:'image'}, ['รูปหน้า — เหมือนต้นฉบับ (ไฟล์สแกน)']),
+        el('option', {value:'smart'}, ['แก้ไขได้ — ข้อความ + ตาราง + รูปภาพ (แนะนำ)']),
+        el('option', {value:'image'}, ['รูปหน้า — เหมือนต้นฉบับ 100% แต่แก้ไขไม่ได้']),
       ]);
       sel.value = mode;
-      sel.addEventListener('change', () => { mode = sel.value; });
+      const ocrRow = el('label', {style:'display:flex;gap:8px;align-items:center;margin:0 0 12px;font-size:14px;'});
+      const cb = el('input', {type:'checkbox'}); cb.checked = useOcr; cb.addEventListener('change', () => useOcr = cb.checked);
+      ocrRow.append(cb, 'หน้าที่เป็นไฟล์สแกน/รูปถ่าย ให้อ่านตัวหนังสือด้วย OCR (ครั้งแรกต้องต่ออินเทอร์เน็ต)');
+      sel.addEventListener('change', () => { mode = sel.value; ocrRow.style.display = mode === 'smart' ? 'flex' : 'none'; });
       card.appendChild(el('div', {class:'field'}, [el('label', {}, ['โหมดการแปลง']), sel]));
-      card.appendChild(el('div', {class:'note'}, ['หมายเหตุ: ไฟล์สแกนไม่มีตัวหนังสือจริง จึงแปลงเป็นข้อความที่แก้ไขได้ไม่ได้ (ไม่มี OCR) ให้ใช้โหมดรูปหน้าแทน ตารางและการจัดหน้าซับซ้อนอาจไม่เหมือนต้นฉบับ 100%']));
+      card.appendChild(ocrRow);
+      card.appendChild(el('div', {class:'note'}, ['ตารางจะถูกสร้างใหม่เมื่อมีเส้นกรอบตาราง ตารางที่ไม่มีเส้นจะได้เป็นข้อความคั่นด้วย Tab — ควรตรวจทานผลลัพธ์ทุกครั้ง โดยเฉพาะไฟล์สแกน']));
       const go = el('button', {class:'btn block'}, ['แปลงเป็น Word']);
       go.addEventListener('click', doConvert);
       card.appendChild(go);
       formWrap.appendChild(card);
     }
+    async function cropJpeg(canvas, r, scale){
+      const x0 = Math.max(0, Math.floor(r.x0*scale)), y0 = Math.max(0, Math.floor(r.y0*scale));
+      const w = Math.min(canvas.width - x0, Math.ceil((r.x1-r.x0)*scale)), h = Math.min(canvas.height - y0, Math.ceil((r.y1-r.y0)*scale));
+      const c = document.createElement('canvas'); c.width = Math.max(1,w); c.height = Math.max(1,h);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(canvas, x0, y0, w, h, 0, 0, w, h);
+      return fetchPngBytesFromDataUrl(c.toDataURL('image/jpeg', 0.9));
+    }
     async function doConvert(){
       resultWrap.innerHTML = '';
-      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), 'กำลังแปลงไฟล์...']);
+      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), el('span', {}, ['กำลังแปลงไฟล์...'])]);
       resultWrap.appendChild(status);
+      const say = t => status.children[1].textContent = t;
+      let worker = null;
       try{
         const doc = await pdfjsFromBytes(new Uint8Array(buf));
         const n = doc.numPages;
         const p1 = await doc.getPage(1); const v1 = p1.getViewport({scale:1});
-        const blocks = [], images = [];
-        let opts, textChars = 0;
-        if(mode==='text'){
-          opts = {pageW: Math.round(v1.width*20), pageH: Math.round(v1.height*20), margin: 1134};
+        const blocks = [], images = []; const allTables = [];
+        let nImg = 0, nScan = 0, textChars = 0;
+        const addImage = (bytes, ext) => { nImg++; const rid = 'rIdImg' + nImg; images.push({rid, name:`image${nImg}.${ext||'jpg'}`, data:bytes}); return rid; };
+        if(mode === 'image'){
           for(let i=1;i<=n;i++){
-            status.lastChild.textContent = `กำลังอ่านหน้า ${i}/${n}...`;
-            const page = await doc.getPage(i);
-            const tc = await page.getTextContent();
-            const paras = pdfTextToParagraphs(tc.items, page.getViewport({scale:1}).height);
-            paras.forEach((p,k) => { if(i>1 && k===0) p.pageBreakBefore = true; textChars += p.text.length; blocks.push(p); });
-            if(paras.length===0 && i>1) blocks.push({type:'p', text:'', pageBreakBefore:true, sz:20});
-          }
-          if(textChars < 5){
-            resultWrap.innerHTML = '';
-            resultWrap.appendChild(el('div', {class:'note warn'}, ['ไม่พบตัวหนังสือในไฟล์นี้ — น่าจะเป็นไฟล์สแกน กรุณาเลือกโหมด "รูปหน้า" แล้วลองใหม่']));
-            return;
-          }
-        } else {
-          opts = {pageW: Math.round(v1.width*20), pageH: Math.round(v1.height*20), margin: 0};
-          for(let i=1;i<=n;i++){
-            status.lastChild.textContent = `กำลังสร้างรูปหน้า ${i}/${n}...`;
+            say(`กำลังสร้างรูปหน้า ${i}/${n}...`);
             const canvas = await renderPageToCanvas(doc, i, 1400);
-            const url = canvas.toDataURL('image/jpeg', 0.85);
-            const data = await fetchPngBytesFromDataUrl(url);
             const page = await doc.getPage(i); const v = page.getViewport({scale:1});
-            const rid = 'rIdImg'+i;
-            images.push({rid, name:`page${i}.jpg`, data});
-            // fit within the page, slightly smaller so no blank trailing page
+            const rid = addImage(await fetchPngBytesFromDataUrl(canvas.toDataURL('image/jpeg', 0.85)));
             const k = Math.min((v1.width*0.995)/v.width, (v1.height*0.985)/v.height);
-            blocks.push({type:'img', rid, id:i, wEmu:Math.round(v.width*k*12700), hEmu:Math.round(v.height*k*12700), pageBreakBefore: i>1});
+            blocks.push({type:'img', rid, wEmu:Math.round(v.width*k*12700), hEmu:Math.round(v.height*k*12700), pageBreakBefore: i>1});
           }
+          finish(DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), margin:0}), n, 'แบบรูปหน้า');
+          return;
         }
-        status.lastChild.textContent = 'กำลังสร้างไฟล์ Word...';
-        const blob = DocxLib.build(blocks, images, opts);
-        const outName = srcFile.name.replace(/\.pdf$/i,'') + '.docx';
-        resultWrap.innerHTML = '';
-        const box = el('div', {class:'result-box'}, [
-          el('div', {class:'rtext'}, [
-            el('div', {class:'rtitle'}, [outName]),
-            el('div', {class:'rsub'}, [`${n} หน้า • ${fmtBytes(blob.size)}` + (mode==='text' ? ` • ${textChars.toLocaleString()} ตัวอักษร` : ' • แบบรูปหน้า')]),
-          ]),
-        ]);
-        const dl = el('button', {class:'btn'}, ['ดาวน์โหลด .docx']);
-        dl.addEventListener('click', () => downloadBlob(blob, outName));
-        box.appendChild(dl);
-        resultWrap.appendChild(box);
+        // ---------- smart mode ----------
+        const pages = [];
+        let libDoc = null; try{ libDoc = await PDFLib.PDFDocument.load(buf, {ignoreEncryption:true, updateMetadata:false}); }catch(e){}
+        for(let i=1;i<=n;i++){
+          say(`กำลังวิเคราะห์หน้า ${i}/${n}...`);
+          const page = await doc.getPage(i);
+          let fixes = null; try{ if(libDoc) fixes = PdfTextFix.pageFixes(libDoc.getPage(i-1)); }catch(e){}
+          pages.push({page, tp: await PdfLayout.textPage(page, fixes)});
+        }
+        // document margins from the text pages
+        const textPages = pages.filter(p => p.tp.chars >= 15);
+        const lefts = [], rights = [];
+        textPages.forEach(p => p.tp.items.forEach(it => { if(it.str.trim()){ lefts.push(it.x); rights.push(p.tp.vp.width - (it.x + (it.w||0))); } }));
+        const sortedL = lefts.sort((a,b)=>a-b), sortedR = rights.sort((a,b)=>a-b);
+        const mLpt = Math.max(28, Math.min(100, sortedL.length ? sortedL[Math.floor(sortedL.length*0.05)] : 56));
+        const mRpt = Math.max(28, Math.min(100, sortedR.length ? sortedR[Math.floor(sortedR.length*0.05)] : 56));
+        const pageWpt = v1.width, contentW = (pageWpt - mLpt - mRpt)*20;
+        for(let i=0;i<n;i++){
+          const {page, tp} = pages[i];
+          let L;
+          if(tp.chars >= 15){ L = PdfLayout.layoutTextPage(tp); textChars += tp.chars; }
+          else if(useOcr){
+            nScan++;
+            if(!worker){
+              say('กำลังโหลดตัวอ่านข้อความ (OCR)...');
+              await loadScriptOnce(LIBS.tesseract);
+              worker = await Tesseract.createWorker(['tha','eng'], 1, {logger: m => { if(m.status === 'recognizing text') say(`กำลังอ่านข้อความหน้า ${i+1}/${n}... ${Math.round(m.progress*100)}%`); }});
+              await worker.setParameters({preserve_interword_spaces:'1'});
+            }
+            say(`กำลังอ่านข้อความหน้า ${i+1}/${n}...`);
+            L = await PdfLayout.scanPage(page, worker);
+            textChars += L.ocrChars;
+          } else {
+            // no text and OCR off: keep the page as a picture
+            const canvas = await renderPageToCanvas(doc, i+1, 1400); const v = page.getViewport({scale:1});
+            const rid = addImage(await fetchPngBytesFromDataUrl(canvas.toDataURL('image/jpeg', 0.85)));
+            const k = Math.min(contentW/20/v.width, 1);
+            blocks.push({type:'img', rid, wEmu:Math.round(v.width*k*12700), hEmu:Math.round(v.height*k*12700), pageBreakBefore:i>0, top:0});
+            continue;
+          }
+          const u = L.unitToPt;
+          // picture source for crops
+          let pic = null, picScale = 1;
+          const needPic = L.imgs.length || L.tables.some(t => t.cells.some(c => c.imgs.length));
+          if(needPic){
+            if(L.canvas){ pic = L.canvas; picScale = 1; }
+            else { const vp = page.getViewport({scale:2}); pic = document.createElement('canvas'); pic.width = Math.ceil(vp.width); pic.height = Math.ceil(vp.height); const x = pic.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,pic.width,pic.height); await page.render({canvasContext:x, viewport:vp}).promise; picScale = 2; }
+          }
+          const pageBlocks = [];
+          // alignment is judged against this page's own text column
+          const boxX0 = L.paras.length ? Math.min(...L.paras.map(p => p.x0)) : mLpt/u, boxX1 = L.paras.length ? Math.max(...L.paras.map(p => p.x1)) : (pageWpt - mRpt)/u;
+          for(const p of L.paras){
+            const hpt = p.h*u;
+            const jc = p.nLines === 1 ? PdfLayout.alignOf(p.x0, p.x1, boxX0, boxX1, p.h) : null;
+            let line = 276;
+            if(p.nLines > 1 && p.lineGap) line = Math.max(200, Math.min(480, Math.round(240 * (p.lineGap*u) / (hpt*1.25))));
+            pageBlocks.push({type:'p', text:p.text, sz:Math.max(12, Math.min(96, Math.round(hpt*2))), bold:p.bold, font:p.font,
+              ind: jc ? 0 : (p.x0*u - mLpt)*20, jc, line, top:p.top*u, bottom:p.bottom*u});
+          }
+          for(const r of L.imgs){
+            const bytes = await cropJpeg(pic, r, picScale);
+            let wpt = (r.x1-r.x0)*u, hpt = (r.y1-r.y0)*u; const k = Math.min(1, contentW/20/wpt); wpt *= k; hpt *= k;
+            const jc = PdfLayout.alignOf(r.x0*u, r.x1*u, mLpt, pageWpt - mRpt, 12);
+            pageBlocks.push({type:'img', rid:addImage(bytes), wEmu:Math.round(wpt*12700), hEmu:Math.round(hpt*12700), jc, ind: jc ? 0 : (r.x0*u - mLpt)*20, top:r.y0*u, bottom:r.y1*u});
+          }
+          for(const t of L.tables){
+            const colPt = t.xs.slice(1).map((x,k) => (x - t.xs[k])*u), rowPt = t.ys.slice(1).map((y,k) => (y - t.ys[k])*u);
+            const tw = colPt.reduce((a,b)=>a+b,0)*20; const k = Math.min(1, contentW/tw);
+            const cells = [];
+            for(const c of t.cells){
+              const paras = PdfLayout.cellParas(c, u, null);
+              if(k < 1) paras.forEach(p => p.sz = Math.max(12, Math.round(p.sz*Math.max(0.75, k))));
+              for(const r of c.imgs){
+                const bytes = await cropJpeg(pic, r, picScale);
+                const wpt = Math.min((r.x1-r.x0)*u*k, (c.x1-c.x0)*u*k - 6), hpt = wpt*(r.y1-r.y0)/(r.x1-r.x0);
+                paras.push({img:{rid:addImage(bytes), wEmu:Math.round(wpt*12700), hEmu:Math.round(hpt*12700)}, jc:'center'});
+              }
+              cells.push({r:c.r, c:c.c, rs:c.rs, cs:c.cs, paras, vAlign: paras.length ? 'center' : 'top'});
+            }
+            const tb = {type:'table', colW:colPt.map(w => Math.max(120, Math.round(w*20*k))), rowH:rowPt.map(h => Math.round(h*20)), cells,
+              ind: k < 1 ? 0 : Math.max(-mLpt*20, Math.round((t.x0*u - mLpt)*20)), top:t.y0*u, bottom:t.y1*u};
+            pageBlocks.push(tb);
+            allTables.push({page:i+1, t, cells});
+          }
+          pageBlocks.sort((a,b) => a.top - b.top);
+          pageBlocks.forEach((b, j) => {
+            const nx = pageBlocks[j+1];
+            const gapPt = nx ? (nx.top - b.bottom) : 6;
+            b.after = Math.max(0, Math.min(600, Math.round(gapPt*20*0.8)));
+            if(j === 0 && i > 0) b.pageBreakBefore = true;
+            blocks.push(b);
+          });
+          if(!pageBlocks.length && i > 0) blocks.push({type:'p', text:'', pageBreakBefore:true, sz:20});
+        }
+        if(worker){ await worker.terminate(); worker = null; }
+        if(!blocks.length){ resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['ไม่พบเนื้อหาในไฟล์นี้ ลองใช้โหมด "รูปหน้า"'])); return; }
+        say('กำลังสร้างไฟล์ Word...');
+        const blob = DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), marginL:Math.round(mLpt*20), marginR:Math.round(mRpt*20), marginT:851, marginB:851});
+        const info = [`${n} หน้า`, allTables.length ? `ตาราง ${allTables.length}` : null, nImg ? `รูปภาพ ${nImg}` : null, nScan ? `หน้าสแกน ${nScan} (OCR)` : null].filter(Boolean).join(' • ');
+        finish(blob, n, info, allTables);
       }catch(err){
-        console.error(err);
+        console.error(err); if(worker) try{ await worker.terminate(); }catch(e){}
         resultWrap.innerHTML = '';
-        resultWrap.appendChild(el('div', {class:'note warn'}, ['แปลงไฟล์ไม่สำเร็จ: ' + err.message]));
+        resultWrap.appendChild(el('div', {class:'note warn'}, ['แปลงไฟล์ไม่สำเร็จ: ' + (err.message || err)]));
+      }
+    }
+    function finish(blob, n, info, tables){
+      const outName = srcFile.name.replace(/\.pdf$/i,'') + '.docx';
+      resultWrap.innerHTML = '';
+      const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [outName]), el('div', {class:'rsub'}, [`${info} • ${fmtBytes(blob.size)}`])])]);
+      const dl = el('button', {class:'btn'}, ['ดาวน์โหลด .docx']);
+      dl.addEventListener('click', () => downloadBlob(blob, outName));
+      box.appendChild(dl); resultWrap.appendChild(box);
+      if(tables && tables.length){
+        const xb = el('button', {class:'btn secondary block', style:'margin-top:10px;'}, [`ดาวน์โหลดเฉพาะตาราง เป็น Excel (${tables.length} ตาราง)`]);
+        xb.addEventListener('click', async () => {
+          try{
+            await loadScriptOnce(LIBS.xlsx);
+            const wb = XLSX.utils.book_new();
+            tables.forEach((T, idx) => {
+              const rows = T.t.ys.length - 1, cols = T.t.xs.length - 1;
+              const aoa = Array.from({length:rows}, () => new Array(cols).fill(''));
+              const merges = [];
+              T.cells.forEach(c => {
+                aoa[c.r][c.c] = c.paras.filter(p => !p.img).map(p => p.text).join('\n');
+                if(c.rs > 1 || c.cs > 1) merges.push({s:{r:c.r, c:c.c}, e:{r:c.r+c.rs-1, c:c.c+c.cs-1}});
+              });
+              // numbers stay numbers
+              const data = aoa.map(r => r.map(v => (/^-?[\d,]+(\.\d+)?$/.test(v.trim()) && v.trim().length < 16) ? Number(v.replace(/,/g,'')) : v));
+              const ws = XLSX.utils.aoa_to_sheet(data);
+              ws['!merges'] = merges;
+              ws['!cols'] = T.t.xs.slice(1).map((x,k) => ({wch: Math.max(6, Math.min(60, Math.round((x - T.t.xs[k]) / (T.t.xs[cols]-T.t.xs[0]) * 120)))}));
+              XLSX.utils.book_append_sheet(wb, ws, `ตาราง${idx+1} (หน้า${T.page})`.slice(0,31));
+            });
+            const out = XLSX.write(wb, {type:'array', bookType:'xlsx'});
+            downloadBlob(new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), srcFile.name.replace(/\.pdf$/i,'') + '-ตาราง.xlsx');
+          }catch(e){ toast('สร้างไฟล์ Excel ไม่สำเร็จ: ' + e.message, true); }
+        });
+        resultWrap.appendChild(xb);
       }
     }
   }
