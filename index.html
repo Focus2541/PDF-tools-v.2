@@ -175,6 +175,12 @@ main{flex:1;padding:18px 20px 60px;}
 .pagenav{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:13.5px;color:var(--ink-soft);}
 .sigpad-wrap canvas{border:1px solid var(--line);border-radius:8px;background:#fff;touch-action:none;width:100%;max-width:420px;height:160px;}
 .cropbox{position:absolute;border:2px dashed var(--teal);background:rgba(47,111,99,.08);pointer-events:none;}
+.ver-badge{font-family:var(--font-body);font-size:11.5px;font-weight:600;color:var(--teal-dark);background:transparent;border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:3px;cursor:pointer;}
+.ver-badge:hover{border-color:var(--teal-dark);}
+.changelog h3{font-size:15px;margin:14px 0 4px;}
+.changelog h3:first-child{margin-top:0;}
+.changelog ul{margin:0 0 6px;padding-left:20px;font-size:14px;line-height:1.6;}
+.changelog .vdate{color:var(--ink-soft);font-weight:400;font-size:12.5px;margin-left:8px;}
 footer.appfoot{padding:20px;text-align:center;color:var(--ink-soft);font-size:12.5px;border-top:1px solid var(--line);}
 @media(max-width:480px){
   .tool-title{font-size:19px;}
@@ -187,11 +193,11 @@ footer.appfoot{padding:20px;text-align:center;color:var(--ink-soft);font-size:12
 <div id="app">
   <div class="topbar">
     <div class="topbar-row">
-      <div class="brand">เครื่องมือ PDF 2<small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
+      <div class="brand">เครื่องมือ PDF 2 <button type="button" id="verBadge" class="ver-badge" title="ดูว่ามีอะไรใหม่">v2.1.0</button><small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
     </div>
   </div>
   <main id="main"></main>
-  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด</footer>
+  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด<br><span id="verFoot">เวอร์ชัน 2.1.0</span></footer>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -210,6 +216,37 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 }
 </script>
 <script>
+/* ===================== เวอร์ชันแอป ===================== */
+const APP_VERSION = '2.1.0';
+const CHANGELOG = [
+  {v:'2.1.0', date:'18 พ.ย. 2569', items:[
+    'PDF → Word ได้ทั้งข้อความ ตาราง (รวมช่องที่ผสานกัน) และรูปภาพ',
+    'แปลงไฟล์สแกน/รูปถ่ายเป็น Word ด้วย OCR ไทย+อังกฤษ พร้อมสร้างตารางจากเส้นกรอบ',
+    'ดาวน์โหลดเฉพาะตารางเป็น Excel ได้',
+    'แก้สระ/วรรณยุกต์ไทยเพี้ยนใน PDF บางแบบ',
+    'แสดงเลขเวอร์ชันและรายการสิ่งที่เปลี่ยน (แตะเลขเวอร์ชันด้านบน)',
+  ]},
+  {v:'2.0.0', date:'13 ต.ค. 2569', items:[
+    'แยกเป็นแอป "เครื่องมือ PDF 2" ติดตั้งคู่กับเวอร์ชันเดิมได้',
+    'OCR อ่านข้อความจากไฟล์สแกน, ใส่รหัสผ่าน PDF, ปิดทับข้อมูลส่วนตัว',
+    'ตราประทับสำเร็จรูป, ลายเซ็นจากรูปถ่าย, เซ็น/ประทับหลายหน้าหลายไฟล์',
+    'กรอกฟอร์ม PDF, Word/Excel → PDF, รับไฟล์ที่แชร์มาจากแอปอื่น',
+  ]},
+];
+function showChangelog(){
+  const main = $('#main'); main.innerHTML = '';
+  const back = el('button', {class:'back-link', type:'button'}, [iconChip('back'), ' กลับไปหน้ารวมเครื่องมือ']);
+  back.addEventListener('click', renderHome);
+  main.appendChild(back);
+  main.appendChild(el('div', {class:'tool-header'}, [el('div', {class:'tool-title'}, ['มีอะไรใหม่']), el('div', {class:'tool-sub'}, [`เวอร์ชันที่ใช้อยู่: ${APP_VERSION}`])]));
+  const box = el('div', {class:'card changelog'});
+  CHANGELOG.forEach(c => {
+    box.appendChild(el('h3', {}, [`เวอร์ชัน ${c.v}`, el('span', {class:'vdate'}, [c.date])]));
+    box.appendChild(el('ul', {}, c.items.map(t => el('li', {}, [t]))));
+  });
+  main.appendChild(box);
+  window.scrollTo(0, 0);
+}
 /* ===================== Utilities ===================== */
 const $ = (sel, el) => (el||document).querySelector(sel);
 const $$ = (sel, el) => Array.from((el||document).querySelectorAll(sel));
@@ -3813,6 +3850,9 @@ function openTool(t){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  const vb = document.getElementById('verBadge'), vf = document.getElementById('verFoot');
+  if(vb){ vb.textContent = 'v' + APP_VERSION; vb.addEventListener('click', showChangelog); }
+  if(vf) vf.textContent = `เวอร์ชัน ${APP_VERSION} · อัปเดต ${CHANGELOG[0].date}`;
   if(!window.PDFLib){ toast('โหลดไลบรารี PDF ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', true); }
   renderHome();
   try{ await handleShareLaunch(); }catch(e){ console.error(e); }

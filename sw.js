@@ -3,7 +3,7 @@
 // อัตโนมัติหลังโหลดสำเร็จครั้งแรก แล้วใช้จากแคชได้ทันทีในครั้งถัดไปแม้ไม่มีเน็ต
 
 const CACHE_PREFIX = 'pdf2-';
-const CACHE_VERSION = CACHE_PREFIX + 'v2';
+const CACHE_VERSION = CACHE_PREFIX + '2.1.0';
 const SHARE_CACHE = CACHE_PREFIX + 'share-inbox';
 const APP_SHELL = [
   './',
