@@ -193,11 +193,11 @@ footer.appfoot{padding:20px;text-align:center;color:var(--ink-soft);font-size:12
 <div id="app">
   <div class="topbar">
     <div class="topbar-row">
-      <div class="brand">เครื่องมือ PDF 2 <button type="button" id="verBadge" class="ver-badge" title="ดูว่ามีอะไรใหม่">v2.3.0</button><small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
+      <div class="brand">เครื่องมือ PDF 2 <button type="button" id="verBadge" class="ver-badge" title="ดูว่ามีอะไรใหม่">v2.4.0</button><small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
     </div>
   </div>
   <main id="main"></main>
-  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด<br><span id="verFoot">เวอร์ชัน 2.3.0</span></footer>
+  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด<br><span id="verFoot">เวอร์ชัน 2.4.0</span></footer>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -217,8 +217,13 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 </script>
 <script>
 /* ===================== เวอร์ชันแอป ===================== */
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.0';
 const CHANGELOG = [
+  {v:'2.4.0', date:'18 พ.ย. 2569', items:[
+    'PDF → Word เลือกได้หลายไฟล์พร้อมกัน แปลงทีละไฟล์ให้อัตโนมัติ ได้ Word แยกไฟล์ตามต้นฉบับ',
+    'ดาวน์โหลดทีละไฟล์ หรือรวมทั้งหมดเป็น .zip ไฟล์เดียว',
+    'ถ้าไฟล์ไหนแปลงไม่สำเร็จ ไฟล์อื่นยังทำต่อจนครบ',
+  ]},
   {v:'2.3.0', date:'18 พ.ย. 2569', items:[
     'ลายเซ็น ตรายาง และลายมือสีน้ำเงิน/แดง แยกออกเป็นรูปพื้นใสตามตำแหน่งเดิม ข้อความพิมพ์ที่อยู่ใต้ลายเซ็นยังเป็นตัวหนังสือแก้ไขได้',
     'ตารางราคา/ประมาณราคา (BOQ) ที่มีแต่เส้นแบ่งคอลัมน์ แยกเป็นแถวตามรายการให้อัตโนมัติ',
@@ -2081,16 +2086,24 @@ registerTool({
   name:'PDF → Word', desc:'แปลง PDF เป็น Word (.docx) — ได้ทั้งข้อความ ตาราง และรูปภาพ รวมถึงไฟล์สแกน',
   longDesc:'แปลง PDF เป็นเอกสาร Word ที่แก้ไขได้ ตัวหนังสือเป็นย่อหน้า ตารางที่มีเส้นกรอบกลายเป็นตาราง Word (รวมช่องที่ผสานกัน) และรูปภาพถูกตัดมาวางตามตำแหน่ง หน้าที่เป็นไฟล์สแกนหรือรูปถ่ายจะอ่านด้วย OCR (ไทย+อังกฤษ) ทำงานในเครื่องทั้งหมด ไม่อัปโหลดไฟล์ไปไหน',
   render(container){
-    let mode = 'smart', useOcr = true, srcFile = null, buf = null;
-    const dz = buildDropzone({accept:'application/pdf', multiple:false, label:'เลือกไฟล์ PDF ที่ต้องการแปลงเป็น Word', sub:'เลือกไฟล์ PDF',
-      onFiles: async (files) => { const f = files[0]; if(!f) return; srcFile = f; buf = await readAsArrayBuffer(f); drawUI(); }});
+    let mode = 'smart', useOcr = true, files = [], busy = false;
+    const dz = buildDropzone({accept:'application/pdf', multiple:true, label:'เลือกไฟล์ PDF ที่ต้องการแปลงเป็น Word (เลือกพร้อมกันได้หลายไฟล์)', sub:'เลือกไฟล์ PDF',
+      onFiles: async (fs) => { if(busy) return; for(const f of fs) files.push({file:f, buf: await readAsArrayBuffer(f)}); drawUI(); }});
     container.appendChild(el('div', {class:'card'}, [dz]));
     const formWrap = el('div'), resultWrap = el('div');
     container.appendChild(formWrap); container.appendChild(resultWrap);
     function drawUI(){
       formWrap.innerHTML = ''; resultWrap.innerHTML = '';
+      if(!files.length) return;
       const card = el('div', {class:'card'});
-      card.appendChild(el('div', {class:'note'}, [`ไฟล์: ${srcFile.name} (${fmtBytes(srcFile.size)})`]));
+      const list = el('div', {class:'filelist'});
+      files.forEach((f, i) => {
+        const rm = el('button', {class:'iconbtn', html:ICONS.close, title:'เอาออก'});
+        rm.addEventListener('click', () => { if(busy) return; files.splice(i, 1); drawUI(); });
+        list.appendChild(el('div', {class:'file-item'}, [el('span', {class:'fname'}, [f.file.name]), el('span', {class:'fsize'}, [fmtBytes(f.file.size)]), rm]));
+      });
+      card.appendChild(list);
+      if(files.length > 1) card.appendChild(el('div', {class:'note'}, [`แปลงทีละไฟล์ตามลำดับ ได้ Word แยกกัน ${files.length} ไฟล์ (ดาวน์โหลดทีละไฟล์หรือรวมเป็น .zip) — ไฟล์สแกนหลายหน้าใช้เวลาหลายนาที ระหว่างนี้เปิดแอปค้างไว้`]));
       const sel = el('select', {}, [
         el('option', {value:'smart'}, ['แก้ไขได้ — ข้อความ + ตาราง + รูปภาพ (แนะนำ)']),
         el('option', {value:'image'}, ['รูปหน้า — เหมือนต้นฉบับ 100% แต่แก้ไขไม่ได้']),
@@ -2103,7 +2116,7 @@ registerTool({
       card.appendChild(el('div', {class:'field'}, [el('label', {}, ['โหมดการแปลง']), sel]));
       card.appendChild(ocrRow);
       card.appendChild(el('div', {class:'note'}, ['ตารางจะถูกสร้างใหม่เมื่อมีเส้นกรอบตาราง ตารางที่ไม่มีเส้นจะได้เป็นข้อความคั่นด้วย Tab — ควรตรวจทานผลลัพธ์ทุกครั้ง โดยเฉพาะไฟล์สแกน']));
-      const go = el('button', {class:'btn block'}, ['แปลงเป็น Word']);
+      const go = el('button', {class:'btn block'}, [files.length > 1 ? `แปลงเป็น Word ทั้ง ${files.length} ไฟล์` : 'แปลงเป็น Word']);
       go.addEventListener('click', doConvert);
       card.appendChild(go);
       formWrap.appendChild(card);
@@ -2130,12 +2143,9 @@ registerTool({
       const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(canvas, x0, y0, w, h, 0, 0, w, h);
       return fetchPngBytesFromDataUrl(c.toDataURL('image/jpeg', 0.9));
     }
-    async function doConvert(){
-      resultWrap.innerHTML = '';
-      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), el('span', {}, ['กำลังแปลงไฟล์...'])]);
-      resultWrap.appendChild(status);
-      const say = t => status.children[1].textContent = t;
-      let worker = null;
+    /* convert one PDF; ctx.worker (the OCR engine) is shared by all files of a batch */
+    async function convertOne(srcFile, buf, say, ctx){
+      let worker = ctx.worker;
       try{
         const doc = await pdfjsFromBytes(new Uint8Array(buf));
         const n = doc.numPages;
@@ -2152,8 +2162,7 @@ registerTool({
             const k = Math.min((v1.width*0.995)/v.width, (v1.height*0.985)/v.height);
             blocks.push({type:'img', rid, wEmu:Math.round(v.width*k*12700), hEmu:Math.round(v.height*k*12700), pageBreakBefore: i>1});
           }
-          finish(DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), margin:0}), n, 'แบบรูปหน้า');
-          return;
+          return {blob:DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), margin:0}), n, info:'แบบรูปหน้า', tables:[]};
         }
         // ---------- smart mode ----------
         const pages = [];
@@ -2183,6 +2192,7 @@ registerTool({
               await loadScriptOnce(LIBS.tesseract);
               worker = await Tesseract.createWorker(['tha','eng'], 1, {logger: m => { if(m.status === 'recognizing text') say(`กำลังอ่านข้อความหน้า ${i+1}/${n}... ${Math.round(m.progress*100)}%`); }});
               await worker.setParameters({preserve_interword_spaces:'1'});
+              ctx.worker = worker;
             }
             say(`กำลังอ่านข้อความหน้า ${i+1}/${n}...`);
             L = await PdfLayout.scanPage(page, worker);
@@ -2298,25 +2308,67 @@ registerTool({
           pageBlocks.forEach(b => blocks.push(b));
           if(!pageBlocks.length && i > 0) blocks.push({type:'p', text:'', pageBreakBefore:true, sz:20});
         }
-        if(worker){ await worker.terminate(); worker = null; }
-        if(!blocks.length){ resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['ไม่พบเนื้อหาในไฟล์นี้ ลองใช้โหมด "รูปหน้า"'])); return; }
+        if(!blocks.length) throw new Error('ไม่พบเนื้อหาในไฟล์นี้ ลองใช้โหมด "รูปหน้า"');
         say('กำลังสร้างไฟล์ Word...');
         const blob = DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), marginL:Math.round(mLpt*20), marginR:Math.round(mRpt*20), marginT:Math.round(MARGIN_T_PT*20), marginB:851});
         const info = [`${n} หน้า`, allTables.length ? `ตาราง ${allTables.length}` : null, nImg ? `รูปภาพ ${nImg}` : null, nScan ? `หน้าสแกน ${nScan} (OCR)` : null].filter(Boolean).join(' • ');
-        finish(blob, n, info, allTables);
-      }catch(err){
-        console.error(err); if(worker) try{ await worker.terminate(); }catch(e){}
-        resultWrap.innerHTML = '';
-        resultWrap.appendChild(el('div', {class:'note warn'}, ['แปลงไฟล์ไม่สำเร็จ: ' + (err.message || err)]));
+        return {blob, n, info, tables:allTables};
+      }finally{ ctx.worker = worker || ctx.worker; }
+    }
+    async function doConvert(){
+      if(busy || !files.length) return;
+      busy = true;
+      resultWrap.innerHTML = '';
+      const status = el('div', {class:'note'}, [el('span',{class:'spinner'}), el('span', {}, ['กำลังแปลงไฟล์...'])]);
+      const list = el('div'), zipWrap = el('div');
+      resultWrap.append(status, zipWrap, list);
+      const ctx = {worker:null}, done = [], t0 = Date.now();
+      try{
+        for(let k=0;k<files.length;k++){
+          const f = files[k], pre = files.length > 1 ? `ไฟล์ ${k+1}/${files.length} (${f.file.name}): ` : '';
+          const say = t => status.children[1].textContent = pre + t;
+          say('กำลังเริ่ม...');
+          try{
+            const res = await convertOne(f.file, f.buf, say, ctx);
+            done.push({file:f.file, res});
+            list.appendChild(resultBox(f.file, res));
+          }catch(err){
+            console.error(err);
+            list.appendChild(el('div', {class:'note warn'}, [`${f.file.name}: แปลงไม่สำเร็จ — ${err.message || err}`]));
+          }
+        }
+      } finally {
+        if(ctx.worker){ try{ await ctx.worker.terminate(); }catch(e){} }
+        busy = false;
+      }
+      status.remove();
+      if(files.length > 1){
+        const secs = Math.round((Date.now() - t0)/1000);
+        zipWrap.appendChild(el('div', {class:'note'}, [`เสร็จแล้ว ${done.length}/${files.length} ไฟล์ (ใช้เวลา ${secs >= 60 ? Math.floor(secs/60) + ' นาที ' : ''}${secs % 60} วินาที)`]));
+        if(done.length > 1){
+          const zb = el('button', {class:'btn block', style:'margin-bottom:12px;'}, [`ดาวน์โหลดทั้งหมด ${done.length} ไฟล์ (.zip)`]);
+          zb.addEventListener('click', async () => {
+            const used = new Set(), parts = [];
+            for(const d of done){
+              let name = d.file.name.replace(/\.pdf$/i,'') + '.docx', k = 2;
+              while(used.has(name)) name = d.file.name.replace(/\.pdf$/i,'') + ` (${k++}).docx`;
+              used.add(name);
+              parts.push({name, data:new Uint8Array(await d.res.blob.arrayBuffer())});
+            }
+            downloadBlob(DocxLib.zip(parts, 'application/zip'), `PDF-เป็น-Word-${niceDate()}.zip`);
+          });
+          zipWrap.appendChild(zb);
+        }
       }
     }
-    function finish(blob, n, info, tables){
+    function resultBox(srcFile, res){
+      const {blob, info, tables} = res;
+      const wrap = el('div', {style:'margin-bottom:12px;'});
       const outName = srcFile.name.replace(/\.pdf$/i,'') + '.docx';
-      resultWrap.innerHTML = '';
       const box = el('div', {class:'result-box'}, [el('div', {class:'rtext'}, [el('div', {class:'rtitle'}, [outName]), el('div', {class:'rsub'}, [`${info} • ${fmtBytes(blob.size)}`])])]);
       const dl = el('button', {class:'btn'}, ['ดาวน์โหลด .docx']);
       dl.addEventListener('click', () => downloadBlob(blob, outName));
-      box.appendChild(dl); resultWrap.appendChild(box);
+      box.appendChild(dl); wrap.appendChild(box);
       if(tables && tables.length){
         const xb = el('button', {class:'btn secondary block', style:'margin-top:10px;'}, [`ดาวน์โหลดเฉพาะตาราง เป็น Excel (${tables.length} ตาราง)`]);
         xb.addEventListener('click', async () => {
@@ -2342,8 +2394,9 @@ registerTool({
             downloadBlob(new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), srcFile.name.replace(/\.pdf$/i,'') + '-ตาราง.xlsx');
           }catch(e){ toast('สร้างไฟล์ Excel ไม่สำเร็จ: ' + e.message, true); }
         });
-        resultWrap.appendChild(xb);
+        wrap.appendChild(xb);
       }
+      return wrap;
     }
   }
 });
