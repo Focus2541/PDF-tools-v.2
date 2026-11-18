@@ -193,11 +193,11 @@ footer.appfoot{padding:20px;text-align:center;color:var(--ink-soft);font-size:12
 <div id="app">
   <div class="topbar">
     <div class="topbar-row">
-      <div class="brand">เครื่องมือ PDF 2 <button type="button" id="verBadge" class="ver-badge" title="ดูว่ามีอะไรใหม่">v2.1.0</button><small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
+      <div class="brand">เครื่องมือ PDF 2 <button type="button" id="verBadge" class="ver-badge" title="ดูว่ามีอะไรใหม่">v2.2.0</button><small>ใช้งานส่วนตัว · ประมวลผลในเครื่องทั้งหมด ไม่อัปโหลดขึ้นเซิร์ฟเวอร์</small></div>
     </div>
   </div>
   <main id="main"></main>
-  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด<br><span id="verFoot">เวอร์ชัน 2.1.0</span></footer>
+  <footer class="appfoot">ไฟล์ทั้งหมดประมวลผลในเบราว์เซอร์ของคุณ — ไม่มีการส่งเอกสารออกไปที่ใด<br><span id="verFoot">เวอร์ชัน 2.2.0</span></footer>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -217,8 +217,16 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 </script>
 <script>
 /* ===================== เวอร์ชันแอป ===================== */
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 const CHANGELOG = [
+  {v:'2.2.0', date:'18 พ.ย. 2569', items:[
+    'PDF สแกนเป็น Word: ตราครุฑ ลายเซ็น ตรายาง และลายมือ ถูกตัดเป็นรูปวางตามตำแหน่งเดิม (พื้นใส) แทนที่จะกลายเป็นตัวอักษรมั่ว',
+    'ใช้ฟอนต์ TH SarabunPSK 16 pt ตามแบบหนังสือราชการ ขนาดตัวอักษรสม่ำเสมอขึ้น',
+    'ย่อหน้าที่บรรทัดแรกเยื้องเข้า (แบบหนังสือราชการ) ต่อกันเป็นย่อหน้าเดียว และรายการ ๑. ๒. แยกบรรทัดถูกต้อง',
+    'ตั้งระยะแท็บตามตำแหน่งจริง คอลัมน์รายชื่อ/ตำแหน่งจึงตรงกัน',
+    'ตัดเงาขอบกระดาษสแกน และกรองจุด/เส้นประที่ถูกอ่านเป็นตัวอักษร',
+    'จัดระยะบรรทัดให้แต่ละหน้าของ PDF อยู่ในหน้าเดียวของ Word',
+  ]},
   {v:'2.1.0', date:'18 พ.ย. 2569', items:[
     'PDF → Word ได้ทั้งข้อความ ตาราง (รวมช่องที่ผสานกัน) และรูปภาพ',
     'แปลงไฟล์สแกน/รูปถ่ายเป็น Word ด้วย OCR ไทย+อังกฤษ พร้อมสร้างตารางจากเส้นกรอบ',
@@ -1388,14 +1396,21 @@ const DocxLib = (() => {
     return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${wEmu}" cy="${hEmu}"/><wp:docPr id="${id}" name="Picture ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="image${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${wEmu}" cy="${hEmu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
   }
   function pPr(b, extraSpacing){
-    const ind = b.ind > 8 ? `<w:ind w:left="${Math.min(9000, Math.round(b.ind))}"/>` : '';
+    const fl = b.firstLine > 8 ? ` w:firstLine="${Math.min(6000, Math.round(b.firstLine))}"` : '';
+    const ind = (b.ind > 8 || fl) ? `<w:ind w:left="${Math.max(0, Math.min(9000, Math.round(b.ind || 0)))}"${fl}/>` : '';
     const jc = b.jc ? `<w:jc w:val="${b.jc}"/>` : '';
-    const sp = extraSpacing || `<w:spacing w:before="0" w:after="${Math.max(0, Math.round(b.after ?? 120))}" w:line="${b.line ?? 276}" w:lineRule="auto"/>`;
-    return `<w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}${sp}${ind}${jc}</w:pPr>`;
+    const sp = extraSpacing || `<w:spacing w:before="${Math.max(0, Math.round(b.before || 0))}" w:after="${Math.max(0, Math.round(b.after ?? 120))}" w:line="${b.line ?? 276}" w:lineRule="${b.lineRule || 'auto'}"/>`;
+    const tabs = (b.tabs && b.tabs.length) ? `<w:tabs>${b.tabs.map(t => `<w:tab w:val="left" w:pos="${Math.max(0, Math.round(t))}"/>`).join('')}</w:tabs>` : '';
+    return `<w:pPr>${b.pageBreakBefore?'<w:pageBreakBefore/>':''}${tabs}${sp}${ind}${jc}</w:pPr>`;
   }
-  function paraXml(b){ return `<w:p>${pPr(b)}${runXml(b.text||'', b.sz||28, b.bold, b.font)}</w:p>`; }
+  let zOrder = 1;
+  function anchorXml(a){
+    const id = drawId++;
+    return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${zOrder++}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>${Math.round(a.xEmu)}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${Math.round(a.yEmu)}</wp:posOffset></wp:positionV><wp:extent cx="${a.wEmu}" cy="${a.hEmu}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Picture ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="image${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${a.rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${a.wEmu}" cy="${a.hEmu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+  }
+  function paraXml(b){ return `<w:p>${pPr(b)}${(b.anchors||[]).map(anchorXml).join('')}${runXml(b.text||'', b.sz||28, b.bold, b.font)}</w:p>`; }
   function imgParaXml(b){
-    return `<w:p>${pPr(b, `<w:spacing w:before="0" w:after="${Math.max(0, Math.round(b.after ?? 0))}" w:line="240" w:lineRule="auto"/>`).replace('</w:pPr>', '<w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>')}${drawingXml(b.rid, b.wEmu, b.hEmu)}</w:p>`;
+    return `<w:p>${pPr(b, `<w:spacing w:before="${Math.max(0, Math.round(b.before || 0))}" w:after="${Math.max(0, Math.round(b.after ?? 0))}" w:line="240" w:lineRule="auto"/>`).replace('</w:pPr>', '<w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>')}${drawingXml(b.rid, b.wEmu, b.hEmu)}</w:p>`;
   }
   /* table: {colW:[twips], rowH:[twips], ind, cells:[{r,c,rs,cs,paras:[{text,sz,bold,font,jc}|{img:{rid,wEmu,hEmu}}]}], pageBreakBefore} */
   const TCB = '<w:tcBorders>' + ['top','left','bottom','right'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('') + '</w:tcBorders>';
@@ -1430,14 +1445,14 @@ const DocxLib = (() => {
   }
   // blocks: p | img | table ; opts: pageW, pageH (twips), margin or marginL/marginR/marginT/marginB (twips)
   function build(blocks, images, opts){
-    drawId = 1;
+    drawId = 1; zOrder = 1;
     const mL = opts.marginL ?? opts.margin, mR = opts.marginR ?? opts.margin, mT = opts.marginT ?? opts.margin, mB = opts.marginB ?? opts.margin;
     let body = '';
     blocks.forEach((b, i) => {
       if(b.type === 'p') body += paraXml(b);
       else if(b.type === 'img') body += imgParaXml(b);
       else if(b.type === 'table'){
-        if(b.pageBreakBefore) body += `<w:p><w:pPr><w:pageBreakBefore/><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr></w:p>`;
+        if(b.pageBreakBefore || b.before) body += `<w:p><w:pPr>${b.pageBreakBefore ? '<w:pageBreakBefore/>' : ''}<w:spacing w:before="${Math.max(0, Math.round(b.before || 0))}" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr></w:p>`;
         body += tableXml(b);
         // Word needs a paragraph between tables and before the section end
         body += `<w:p><w:pPr><w:spacing w:before="0" w:after="${Math.max(0, Math.round(b.after ?? 120))}" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="8"/></w:rPr></w:pPr></w:p>`;
@@ -1564,13 +1579,13 @@ const PdfLayout = (() => {
       if(!it.str) continue;
       if(!it.str.trim()){ if(cur) pendingSpace = true; continue; }   // decide on spaces when the next text arrives
       if(!cur || Math.abs(it.y - cur.y) > Math.max(it.h, cur.h)*0.5 || it.x < cur.endX - Math.max(it.h, cur.h)*3){
-        cur = {y:it.y, h:it.h, x0:it.x, endX:it.x, text:'', chars:0, boldChars:0, fonts:{}};
+        cur = {y:it.y, h:it.h, x0:it.x, endX:it.x, text:'', chars:0, boldChars:0, fonts:{}, tabs:[]};
         lines.push(cur); pendingSpace = false;
       }
       if(cur.text){
         const gap = it.x - cur.endX, last = cur.text.slice(-1), first = it.str.trimStart()[0];
         const bothThai = isThai(last) && isThai(first);
-        if(gap > cur.h*1.8) cur.text += '\t';
+        if(gap > cur.h*1.8){ cur.text += '\t'; cur.tabs.push(it.x); }
         else if(pendingSpace ? !(bothThai && gap < cur.h*0.2) : (gap > cur.h*0.2 && !isThai(last) && !isThai(first))){ if(!/\s$/.test(cur.text)) cur.text += ' '; }
       }
       pendingSpace = false;
@@ -1591,14 +1606,24 @@ const PdfLayout = (() => {
   function linesToParas(lines){
     if(!lines.length) return [];
     sortLines(lines);
-    const minX = Math.min(...lines.map(l => l.x0)), maxEnd = Math.max(...lines.map(l => l.endX));
+    const xs0 = lines.map(l => l.x0).sort((a,b)=>a-b), xs1 = lines.map(l => l.endX).sort((a,b)=>a-b);
+    const minX = xs0[Math.floor(xs0.length*0.1)], maxEnd = xs1[Math.floor((xs1.length-1)*0.9)];
     const paras = []; let p = null, prev = null;
     for(const l of lines){
       const gap = prev ? l.y - prev.y : 0;
+      const contX = p ? (p.contX ?? p.x0) : 0;
+      const sameCol = p && Math.abs(l.x0 - contX) < l.h*3;
+      const backToMargin = p && p.nLines === 1 && l.x0 < p.x0 - l.h*1.5 && l.x0 < minX + l.h*3 && (p.x0 - l.x0) < (maxEnd - minX)*0.35;
+      const prevStart = p ? (p.nLines === 1 ? p.x0 : contX) : 0;
+      const listStart = /^\s*(\(?[0-9\u0E50-\u0E59]{1,3}[.)]|[-\u2022•]\s)/.test(l.text);
       const wrapped = p && prev && gap > 0 && gap < l.h*1.9 && prev.endX > minX + (maxEnd-minX)*0.8 && !prev.text.includes('\t')
-        && Math.abs(prev.h - l.h) < Math.max(1.5, l.h*0.15) && l.x0 < p.x0 + l.h*3 && l.x0 > p.x0 - l.h*3 && prev.bold === l.bold;
-      if(wrapped){ p.text += joinThai(p.text, l.text.trim()) + l.text.trim(); p.nLines++; p.gaps.push(gap); p.x1 = Math.max(p.x1, l.endX); p.bottom = l.y + l.h*0.3; }
-      else { p = {text:l.text, h:l.h, bold:l.bold, font:l.font, x0:l.x0, x1:l.endX, top:l.y - l.h, bottom:l.y + l.h*0.3, nLines:1, gaps:[]}; paras.push(p); }
+        && (prev.endX - prevStart) > (maxEnd - minX)*0.55 && !listStart && !l.text.includes('\t')
+        && Math.abs(prev.h - l.h) < Math.max(1.5, l.h*0.15) && (sameCol || backToMargin) && prev.bold === l.bold;
+      if(wrapped){
+        if(backToMargin){ p.contX = l.x0; p.firstIndent = p.x0 - l.x0; }
+        p.text += joinThai(p.text, l.text.trim()) + l.text.trim(); p.nLines++; p.gaps.push(gap); p.x1 = Math.max(p.x1, l.endX); p.bottom = l.y + l.h*0.3;
+      }
+      else { p = {text:l.text, h:l.h, bold:l.bold, font:l.font, x0:l.x0, x1:l.endX, top:l.y - l.h, bottom:l.y + l.h*0.3, nLines:1, gaps:[], tabs:l.tabs || []}; paras.push(p); }
       prev = l;
     }
     paras.forEach(p => { p.lineGap = p.gaps.length ? median(p.gaps) : 0; });
@@ -1770,8 +1795,8 @@ const PdfLayout = (() => {
     const hist = new Uint32Array(256); for(let i=0;i<g.length;i+=7) hist[g[i]]++;
     let acc = 0, tot = 0; for(let i=0;i<256;i++) tot += hist[i];
     let p80 = 255; for(let i=0;i<256;i++){ acc += hist[i]; if(acc >= tot*0.8){ p80 = i; break; } }
-    const floor = p80*0.85, W1 = w+1, I = new Float64Array(W1*(h+1));
-    for(let y=0;y<h;y++){ let row = 0; for(let x=0;x<w;x++){ row += Math.max(g[y*w+x], floor); I[(y+1)*W1+x+1] = I[y*W1+x+1] + row; } }
+    const floor = p80*0.85, W1 = w+1, I = new Uint32Array(W1*(h+1));
+    for(let y=0;y<h;y++){ let row = 0; for(let x=0;x<w;x++){ row += Math.max(g[y*w+x], floor) | 0; I[(y+1)*W1+x+1] = I[y*W1+x+1] + row; } }
     const out = new Uint8ClampedArray(w*h);
     for(let y=0;y<h;y++){ const y0 = Math.max(0,y-r), y1 = Math.min(h,y+r+1);
       for(let x=0;x<w;x++){ const x0 = Math.max(0,x-r), x1 = Math.min(w,x+r+1);
@@ -1838,6 +1863,46 @@ const PdfLayout = (() => {
       return ix*iy > (r.x1-r.x0)*(r.y1-r.y0)*0.3;
     }));
   }
+  /* dark shadows along the scanned page's edges -> white (otherwise read as "|" or "l") */
+  function whitenBorders(g, w, h){
+    const lim = (n) => Math.round(n*0.07);
+    const colDark = x => { let d = 0, n = 0; for(let y=0;y<h;y+=4){ n++; if(g[y*w+x] < 140) d++; } return d/n; };
+    const rowDark = y => { let d = 0, n = 0; for(let x=0;x<w;x+=4){ n++; if(g[y*w+x] < 140) d++; } return d/n; };
+    const edge = (len, dark, fromEnd) => { let last = -1, miss = 0;
+      for(let k=0;k<lim(len);k++){ const i = fromEnd ? len-1-k : k; if(dark(i) > 0.12){ last = k; miss = 0; } else if(++miss > 6) break; }
+      return last < 0 ? 0 : last + 4; };
+    const L = edge(w, colDark, false), R = edge(w, colDark, true), T = edge(h, rowDark, false), B = edge(h, rowDark, true);
+    for(let y=0;y<h;y++){ const o = y*w; for(let x=0;x<L;x++) g[o+x] = 255; for(let x=w-R;x<w;x++) g[o+x] = 255; }
+    for(let y=0;y<T;y++) g.fill(255, y*w, y*w+w);
+    for(let y=h-B;y<h;y++) g.fill(255, y*w, y*w+w);
+  }
+  /* ink not explained by confidently read text: emblems, signatures, stamps, handwriting -> picture regions */
+  function detectGraphics(g, w, h, goodWords, tables, medH){
+    const C = Math.max(4, Math.round(medH/5)), gw = Math.ceil(w/C), gh = Math.ceil(h/C);
+    const m = new Uint8Array(gw*gh);
+    for(let cy=0;cy<gh;cy++) for(let cx=0;cx<gw;cx++){
+      let ink = 0, n = 0;
+      for(let y=cy*C; y<Math.min(h,(cy+1)*C); y+=2) for(let x=cx*C; x<Math.min(w,(cx+1)*C); x+=2){ n++; if(g[y*w+x] < 165) ink++; }
+      if(n && ink/n > 0.04) m[cy*gw+cx] = 1;
+    }
+    const clear = (x0, y0, x1, y1) => { for(let cy=Math.max(0,Math.floor(y0/C)); cy<=Math.min(gh-1,Math.floor(y1/C)); cy++) for(let cx=Math.max(0,Math.floor(x0/C)); cx<=Math.min(gw-1,Math.floor(x1/C)); cx++) m[cy*gw+cx] = 0; };
+    goodWords.forEach(wd => clear(wd.bbox.x0 - 3, wd.bbox.y0 - 3, wd.bbox.x1 + 3, wd.bbox.y1 + 3));
+    tables.forEach(t => clear(t.x0 - 6, t.y0 - 6, t.x1 + 6, t.y1 + 6));
+    const d = new Uint8Array(gw*gh);
+    for(let y=0;y<gh;y++) for(let x=0;x<gw;x++){ if(!m[y*gw+x]) continue; for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X = x+dx, Y = y+dy; if(X>=0&&Y>=0&&X<gw&&Y<gh) d[Y*gw+X] = 1; } }
+    const seen = new Uint8Array(gw*gh), out = [];
+    for(let i=0;i<d.length;i++){
+      if(!d[i] || seen[i]) continue;
+      const q = [i]; seen[i] = 1; let x0 = gw, y0 = gh, x1 = 0, y1 = 0, ink = 0;
+      while(q.length){ const j = q.pop(), x = j % gw, y = (j / gw) | 0; if(m[j]) ink++;
+        if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X = x+dx, Y = y+dy; if(X<0||Y<0||X>=gw||Y>=gh) continue; const k = Y*gw+X; if(d[k] && !seen[k]){ seen[k] = 1; q.push(k); } } }
+      const r = {x0:Math.max(0,x0*C - C), y0:Math.max(0,y0*C - C), x1:Math.min(w,(x1+1)*C + C), y1:Math.min(h,(y1+1)*C + C)};
+      const bw = r.x1 - r.x0, bh = r.y1 - r.y0;
+      if(bw >= medH*1.8 && bh >= medH*1.3 && ink >= 14 && bw*bh < w*h*0.4) out.push(r);
+    }
+    return out;
+  }
   async function scanPage(page, worker){
     const vp1 = page.getViewport({scale:1});
     const s = Math.min(300/72, 3300/Math.max(vp1.width, vp1.height));
@@ -1847,6 +1912,7 @@ const PdfLayout = (() => {
     await page.render({canvasContext:cx, viewport:vp}).promise;
     const w = canvas.width, h = canvas.height;
     const g = normalize(grayOf(canvas), w, h);
+    whitenBorders(g, w, h);
     const {Hs, Vs} = detectLines(g, w, h, Math.max(50, w*0.04), Math.max(30, h*0.012));
     const tables = buildTables(Hs, Vs, {tol:Math.max(3, w/700), minLen:Math.max(50, w*0.04), minCell:Math.max(14, w/110), pageW:w, pageH:h});
     const photos = detectPhotos(g, w, h, tables);
@@ -1863,45 +1929,76 @@ const PdfLayout = (() => {
     const {data} = await worker.recognize(oc, {}, {blocks:true, text:true});
     const lines = [];
     (data.blocks||[]).forEach(b => (b.paragraphs||[]).forEach(p => (p.lines||[]).forEach(l => lines.push(l))));
-    const confs = lines.map(l => l.confidence).sort((a,b)=>a-b);
-    const cut = Math.max(45, (confs[Math.floor(confs.length/2)] || 0) - 30);
+    const fix = t => t.replace(/ํา/g, 'ำ');
+    const allWords = [];
+    lines.forEach(l => (l.words||[]).forEach(wd => { if(wd.text && wd.text.trim()) allWords.push(wd); }));
+    const good = allWords.filter(wd => wd.confidence >= 45);
+    // typical text line height (line boxes include Thai upper/lower marks, word boxes often do not)
+    const medH = median(lines.filter(l => l.confidence >= 60 && l.text.trim().length > 4).map(l => l.bbox.y1 - l.bbox.y0)) || median(lines.map(l => l.bbox.y1 - l.bbox.y0)) || 50;
     // a "photo" that is mostly covered by confidently read words is really text (e.g. coloured headings)
     for(let k=photos.length-1;k>=0;k--){
       const r = photos[k]; let cover = 0;
-      lines.forEach(l => { if(l.confidence < cut) return; (l.words||[]).forEach(wd => { const b = wd.bbox, cx = (b.x0+b.x1)/2, cy = (b.y0+b.y1)/2; if(inside(cx, cy, r) && wd.confidence >= 50) cover += (b.x1-b.x0)*(b.y1-b.y0); }); });
+      good.forEach(wd => { const b = wd.bbox; if(inside((b.x0+b.x1)/2, (b.y0+b.y1)/2, r) && wd.confidence >= 55) cover += (b.x1-b.x0)*(b.y1-b.y0); });
       if(cover > (r.x1-r.x0)*(r.y1-r.y0)*0.2) photos.splice(k, 1);
     }
-    const fix = t => t.replace(/ํา/g, 'ำ').replace(/\s+$/,'');
+    // emblems, signatures, stamps and handwriting become pictures instead of garbled text
+    const overlaps = (a, b) => Math.max(0, Math.min(a.x1,b.x1) - Math.max(a.x0,b.x0)) * Math.max(0, Math.min(a.y1,b.y1) - Math.max(a.y0,b.y0)) > 0;
+    const graphics = mergeRects(detectGraphics(g, w, h, allWords.filter(wd => wd.confidence >= 65), tables, medH), medH*0.4).filter(r => !photos.some(ph => overlaps(ph, r)));
+    const pics = [...photos, ...graphics];
+    const inPic = (x, y) => pics.some(r => inside(x, y, r));
     const flowLines = [];
     for(const l of lines){
-      if(!(l.confidence >= cut || (l.confidence >= 30 && l.text.replace(/\s/g,'').length > 12))) continue;
       const words = (l.words || []).filter(wd => wd.text && wd.text.trim());
-      const lh = (l.bbox.y1 - l.bbox.y0);
-      const fh = lh*0.78, base = l.bbox.y1 - lh*0.18;
-      const keep = [];
+      let keep = [];
       for(const wd of words){
-        const wx = (wd.bbox.x0 + wd.bbox.x1)/2, wy = (wd.bbox.y0 + wd.bbox.y1)/2;
+        const b = wd.bbox, wx = (b.x0 + b.x1)/2, wy = (b.y0 + b.y1)/2, wh = b.y1 - b.y0;
         const cell = cellAt(tables, wx, wy);
-        if(cell){ cell.items.push({str:fix(wd.text), x:wd.bbox.x0, y:base, h:fh, w:wd.bbox.x1 - wd.bbox.x0}); continue; }
-        if(photos.some(r => inside(wx, wy, r))) continue;
+        if(cell){ if(wd.confidence >= 25){ const lhL = Math.min(l.bbox.y1 - l.bbox.y0, medH*1.3); cell.items.push({str:fix(wd.text), x:b.x0, y:l.bbox.y1 - lhL*0.18, h:lhL*0.78, w:b.x1 - b.x0}); } continue; }
+        if(inPic(wx, wy) && wd.confidence < 80) continue;
+        if(wd.confidence < 30) continue;
+        // short Latin/symbol fragments in a Thai page are usually dotted leaders or specks read as letters
+        if(wd.confidence < 80 && /^[A-Za-z\[\]{}()|\\\/@#=+*_~^"'`<>.,:;!?-]{1,2}$/.test(wd.text.trim())) continue;
         keep.push(wd);
       }
+      // stray marks at the far ends of a line (punch holes, specks)
+      const lone = (wd, nb) => wd.text.trim().length <= 2 && wd.confidence < 75 && nb && Math.abs((nb.bbox.x0 + nb.bbox.x1)/2 - (wd.bbox.x0 + wd.bbox.x1)/2) > medH*3;
+      const bar = wd => /^[|lI!\[\]]$/.test(wd.text.trim());
+      while(keep.length > 1 && (lone(keep[0], keep[1]) || (bar(keep[0]) && keep[1].bbox.x0 - keep[0].bbox.x1 > medH*1.5))) keep.shift();
+      while(keep.length > 1 && bar(keep[keep.length-1]) && keep[keep.length-1].bbox.x0 - keep[keep.length-2].bbox.x1 > medH*1.5) keep.pop();
+      while(keep.length > 1 && lone(keep[keep.length-1], keep[keep.length-2])) keep.pop();
+      if(keep.length === 1 && keep[0].text.trim().length <= 1 && !/[0-9๐-๙]/.test(keep[0].text)) keep = [];
       if(!keep.length) continue;
-      const text = keep.length === words.length ? fix(l.text.trim()) : fix(keep.map((wd, k) => (k && wd.bbox.x0 - keep[k-1].bbox.x1 > fh*0.33 ? ' ' : '') + wd.text).join(''));
-      flowLines.push({text, y:base, h:fh, x0:Math.min(...keep.map(wd => wd.bbox.x0)), endX:Math.max(...keep.map(wd => wd.bbox.x1)), bold:false, font:null});
+      const meanConf = keep.reduce((a,wd) => a + wd.confidence, 0)/keep.length, nChars = keep.reduce((a,wd) => a + wd.text.trim().length, 0);
+      if(meanConf < 60 && nChars < 6) continue;        // leftovers of handwriting/stamps
+      if(meanConf < 50) continue;
+      if(meanConf < 72 && keep.filter(wd => wd.text.trim().length <= 2).length >= keep.length*0.6 && keep.length >= 3) continue;   // dotted leaders / specks
+      const ly0 = Math.min(...keep.map(wd => wd.bbox.y0)), ly1 = Math.max(...keep.map(wd => wd.bbox.y1)), lh = ly1 - ly0;
+      if(lh > medH*3) continue;                       // a giant "word" is a graphic the detector missed
+      // big gaps become tabs at the position of the following word, so columns line up in Word
+      const tabs = [];
+      const text0 = keep.map((wd, k) => { if(!k) return wd.text.trim(); const gap = wd.bbox.x0 - keep[k-1].bbox.x1;
+        if(gap > medH*2){ tabs.push(wd.bbox.x0); return '\t' + wd.text.trim(); } return (gap > medH*0.3 ? ' ' : '') + wd.text.trim(); }).join('');
+      let text = text0;
+      if(keep.length === words.length && !tabs.length) text = l.text.trim().replace(/ {2,}/g, ' ');
+      text = fix(text);
+      const base = ly1;
+      flowLines.push({text, tabs, y:base - lh*0.18, h:lh*0.78, x0:Math.min(...keep.map(wd => wd.bbox.x0)), endX:Math.max(...keep.map(wd => wd.bbox.x1)), bold:false, font:null});
     }
     // cell items must read word by word with spaces (tesseract words are space-separated chunks)
     tables.forEach(t => t.cells.forEach(c => { c.items.sort((a,b) => Math.abs(a.y-b.y) < a.h*0.5 ? a.x - b.x : a.y - b.y); c.items.forEach((it, i) => { const nx = c.items[i+1]; if(nx && Math.abs(nx.y - it.y) < it.h*0.5 && (nx.x - (it.x + it.w)) > it.h*0.33) it.str += ' '; }); }));
-    // OCR line boxes vary with Thai upper/lower marks: snap near-median heights to one body size
+    // OCR boxes vary with Thai upper/lower marks: snap near-median heights to one body size
     const med = median(flowLines.map(l => l.h));
-    flowLines.forEach(l => { if(med && l.h/med > 0.5 && l.h/med < 1.22) l.h = med; });
+    for(let k=flowLines.length-1;k>=0;k--){ const l = flowLines[k], thaiLetters = (l.text.match(/[\u0E01-\u0E2E]/g) || []).length;
+      if(med && ((l.h < med*0.6 && l.text.replace(/\s/g,'').length < 8) || (l.h < med*0.72 && thaiLetters < 4))) flowLines.splice(k,1); }
+    flowLines.forEach(l => { if(med && l.h/med > 0.5 && l.h/med < 1.25) l.h = med; });
     tables.forEach(t => { const hs = []; t.cells.forEach(c => c.items.forEach(it => hs.push(it.h))); const m = median(hs); t.cells.forEach(c => c.items.forEach(it => { if(m && it.h/m > 0.5 && it.h/m < 1.3) it.h = m; })); });
-    return {W:w, H:h, unitToPt:1/s, tables, imgs:photos, paras:linesToParas(flowLines), canvas, ocrChars:flowLines.reduce((n,l) => n + l.text.length, 0)};
+    return {W:w, H:h, unitToPt:1/s, tables, imgs:photos, floats:graphics, paras:linesToParas(flowLines), canvas, ocrChars:flowLines.reduce((n,l) => n + l.text.length, 0), scanned:true};
   }
   return {textPage, layoutTextPage, scanPage, cellParas, alignOf, median, _dbg:{grayOf, normalize, detectLines, buildTables, detectPhotos}};
 })();
 
 /* ===================== PDF → Word ===================== */
+const SCAN_SZ_K = 1.33, MARGIN_T_PT = 42.55;
 registerTool({
   id:'pdf2word', cat:'convert', icon:'pdf2word',
   name:'PDF → Word', desc:'แปลง PDF เป็น Word (.docx) — ได้ทั้งข้อความ ตาราง และรูปภาพ รวมถึงไฟล์สแกน',
@@ -1933,6 +2030,17 @@ registerTool({
       go.addEventListener('click', doConvert);
       card.appendChild(go);
       formWrap.appendChild(card);
+    }
+    async function cropPngClear(canvas, r, scale){
+      const x0 = Math.max(0, Math.floor(r.x0*scale)), y0 = Math.max(0, Math.floor(r.y0*scale));
+      const w = Math.min(canvas.width - x0, Math.ceil((r.x1-r.x0)*scale)), h = Math.min(canvas.height - y0, Math.ceil((r.y1-r.y0)*scale));
+      const k = Math.min(1, 700/Math.max(w, h));                 // signatures/stamps don't need full scan resolution
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w*k)); c.height = Math.max(1, Math.round(h*k));
+      const x = c.getContext('2d'); x.drawImage(canvas, x0, y0, w, h, 0, 0, c.width, c.height);
+      const d = x.getImageData(0, 0, c.width, c.height), px = d.data;
+      for(let i=0;i<px.length;i+=4){ const gy = (px[i]*77 + px[i+1]*150 + px[i+2]*29) >> 8; const a = Math.max(0, Math.min(255, (232 - gy)*4)); px[i+3] = a; }
+      x.putImageData(d, 0, 0);
+      return fetchPngBytesFromDataUrl(c.toDataURL('image/png'));
     }
     async function cropJpeg(canvas, r, scale){
       const x0 = Math.max(0, Math.floor(r.x0*scale)), y0 = Math.max(0, Math.floor(r.y0*scale));
@@ -1980,9 +2088,9 @@ registerTool({
         const lefts = [], rights = [];
         textPages.forEach(p => p.tp.items.forEach(it => { if(it.str.trim()){ lefts.push(it.x); rights.push(p.tp.vp.width - (it.x + (it.w||0))); } }));
         const sortedL = lefts.sort((a,b)=>a-b), sortedR = rights.sort((a,b)=>a-b);
-        const mLpt = Math.max(28, Math.min(100, sortedL.length ? sortedL[Math.floor(sortedL.length*0.05)] : 56));
-        const mRpt = Math.max(28, Math.min(100, sortedR.length ? sortedR[Math.floor(sortedR.length*0.05)] : 56));
-        const pageWpt = v1.width, contentW = (pageWpt - mLpt - mRpt)*20;
+        let mLpt = Math.max(28, Math.min(100, sortedL.length ? sortedL[Math.floor(sortedL.length*0.05)] : 56));
+        let mRpt = Math.max(28, Math.min(100, sortedR.length ? sortedR[Math.floor(sortedR.length*0.05)] : 56));
+        const pageWpt = v1.width; let contentW = (pageWpt - mLpt - mRpt)*20, marginsFromScan = !textPages.length;
         for(let i=0;i<n;i++){
           const {page, tp} = pages[i];
           let L;
@@ -2007,23 +2115,37 @@ registerTool({
             continue;
           }
           const u = L.unitToPt;
+          // a document that is only scans takes its margins from the first page that has text
+          if(marginsFromScan && L.paras.length){
+            const xs = L.paras.map(p => (p.contX ?? p.x0)*u).sort((a,b)=>a-b), xe = L.paras.map(p => pageWpt - p.x1*u).sort((a,b)=>a-b);
+            mLpt = Math.max(28, Math.min(110, xs[Math.floor(xs.length*0.1)])); mRpt = Math.max(28, Math.min(110, xe[Math.floor(xe.length*0.1)]));
+            contentW = (pageWpt - mLpt - mRpt)*20; marginsFromScan = false;
+          }
           // picture source for crops
           let pic = null, picScale = 1;
-          const needPic = L.imgs.length || L.tables.some(t => t.cells.some(c => c.imgs.length));
+          const needPic = L.imgs.length || (L.floats && L.floats.length) || L.tables.some(t => t.cells.some(c => c.imgs.length));
           if(needPic){
             if(L.canvas){ pic = L.canvas; picScale = 1; }
             else { const vp = page.getViewport({scale:2}); pic = document.createElement('canvas'); pic.width = Math.ceil(vp.width); pic.height = Math.ceil(vp.height); const x = pic.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,pic.width,pic.height); await page.render({canvasContext:x, viewport:vp}).promise; picScale = 2; }
           }
           const pageBlocks = [];
+          // scanned Thai documents are nearly always set in 16 pt: snap the body size when it is close
+          let scanSnap = 1;
+          if(L.scanned && L.paras.length){ const body = PdfLayout.median(L.paras.map(p => p.h*u*SCAN_SZ_K)); if(body >= 13.5 && body <= 21) scanSnap = 16/body; }
           // alignment is judged against this page's own text column
           const boxX0 = L.paras.length ? Math.min(...L.paras.map(p => p.x0)) : mLpt/u, boxX1 = L.paras.length ? Math.max(...L.paras.map(p => p.x1)) : (pageWpt - mRpt)/u;
           for(const p of L.paras){
             const hpt = p.h*u;
             const jc = p.nLines === 1 ? PdfLayout.alignOf(p.x0, p.x1, boxX0, boxX1, p.h) : null;
-            let line = 276;
-            if(p.nLines > 1 && p.lineGap) line = Math.max(200, Math.min(480, Math.round(240 * (p.lineGap*u) / (hpt*1.25))));
-            pageBlocks.push({type:'p', text:p.text, sz:Math.max(12, Math.min(96, Math.round(hpt*2))), bold:p.bold, font:p.font,
-              ind: jc ? 0 : (p.x0*u - mLpt)*20, jc, line, top:p.top*u, bottom:p.bottom*u});
+            // multi-line paragraphs keep the original baseline-to-baseline distance
+            let line = 240, lineRule = 'auto';
+            if(p.nLines > 1 && p.lineGap && !L.scanned){ line = Math.max(160, Math.min(1400, Math.round(p.lineGap*u*20))); lineRule = 'atLeast'; }
+            // scans are written in TH SarabunPSK (the usual font of Thai official documents); its glyphs are small for their point size
+            const sz = L.scanned ? Math.round(hpt*SCAN_SZ_K*scanSnap*2) : Math.round(hpt*2);
+            pageBlocks.push({type:'p', text:p.text, sz:Math.max(12, Math.min(96, sz)), bold:p.bold, font: L.scanned ? 'TH SarabunPSK' : p.font,
+              ind: jc ? 0 : ((p.contX ?? p.x0)*u - mLpt)*20, firstLine: jc ? 0 : (p.firstIndent||0)*u*20, jc, line, lineRule, top:p.top*u, bottom:p.bottom*u,
+              firstBase:(p.top + p.h)*u, lastBase:(p.bottom - p.h*0.3)*u, nLines:p.nLines,
+              tabs: jc ? [] : (p.tabs||[]).map(x => (x*u - mLpt)*20).filter(t => t > 0 && t < contentW)});
           }
           for(const r of L.imgs){
             const bytes = await cropJpeg(pic, r, picScale);
@@ -2031,12 +2153,21 @@ registerTool({
             const jc = PdfLayout.alignOf(r.x0*u, r.x1*u, mLpt, pageWpt - mRpt, 12);
             pageBlocks.push({type:'img', rid:addImage(bytes), wEmu:Math.round(wpt*12700), hEmu:Math.round(hpt*12700), jc, ind: jc ? 0 : (r.x0*u - mLpt)*20, top:r.y0*u, bottom:r.y1*u});
           }
+          // signatures, stamps, emblems: float at their place on the page (they overlap text in the original)
+          const anchors = [];
+          for(const r of (L.floats || [])){
+            const bytes = await cropPngClear(pic, r, picScale);
+            nImg++; const rid = 'rIdImg' + nImg; images.push({rid, name:`image${nImg}.png`, data:bytes});
+            anchors.push({rid, xEmu:r.x0*u*12700, yEmu:r.y0*u*12700, wEmu:Math.round((r.x1-r.x0)*u*12700), hEmu:Math.round((r.y1-r.y0)*u*12700)});
+          }
           for(const t of L.tables){
+            const fontT = L.scanned ? 'TH SarabunPSK' : null;
             const colPt = t.xs.slice(1).map((x,k) => (x - t.xs[k])*u), rowPt = t.ys.slice(1).map((y,k) => (y - t.ys[k])*u);
             const tw = colPt.reduce((a,b)=>a+b,0)*20; const k = Math.min(1, contentW/tw);
             const cells = [];
             for(const c of t.cells){
-              const paras = PdfLayout.cellParas(c, u, null);
+              const paras = PdfLayout.cellParas(c, u, fontT);
+              if(L.scanned) paras.forEach(p => { p.font = fontT; p.sz = Math.round(p.sz*SCAN_SZ_K*scanSnap); });
               if(k < 1) paras.forEach(p => p.sz = Math.max(12, Math.round(p.sz*Math.max(0.75, k))));
               for(const r of c.imgs){
                 const bytes = await cropJpeg(pic, r, picScale);
@@ -2051,19 +2182,38 @@ registerTool({
             allTables.push({page:i+1, t, cells});
           }
           pageBlocks.sort((a,b) => a.top - b.top);
+          if(anchors.length){ let holder = pageBlocks.find(b => b.type === 'p'); if(!holder){ holder = {type:'p', text:'', sz:16, top:0, bottom:0, firstBase:0, lastBase:0}; pageBlocks.unshift(holder); } holder.anchors = anchors; }
           pageBlocks.forEach((b, j) => {
             const nx = pageBlocks[j+1];
-            const gapPt = nx ? (nx.top - b.bottom) : 6;
-            b.after = Math.max(0, Math.min(600, Math.round(gapPt*20*0.8)));
+            let afterPt;
+            if(!nx) afterPt = 6;
+            else if(b.type === 'p' && nx.type === 'p') afterPt = (nx.firstBase - b.lastBase) - (nx.sz/2)*1.2;   // baseline distance minus the next line's own height
+            else afterPt = (nx.top - b.bottom) - (nx.type === 'p' ? (nx.sz/2)*0.25 : 0);
+            b.after = Math.max(0, Math.min(600, Math.round(afterPt*20)));
             if(j === 0 && i > 0) b.pageBreakBefore = true;
-            blocks.push(b);
+            // start each page's content as far down as it starts in the PDF (keeps floating signatures/emblems in place)
+            if(j === 0) b.before = Math.max(0, Math.min(8000, Math.round((b.top - MARGIN_T_PT)*20)));
           });
+          // keep each PDF page on one Word page: if the estimated height overflows, tighten the spacing on this page
+          {
+            const pageHpt = page.getViewport({scale:1}).height, avail = pageHpt - MARGIN_T_PT - 42.55 - 6;
+            let spacing = 0, body = 0;
+            pageBlocks.forEach(b => {
+              spacing += ((b.before || 0) + (b.after || 0))/20;
+              if(b.type === 'p') body += (b.nLines || 1) * (b.sz/2) * 1.3;
+              else if(b.type === 'img') body += b.hEmu/12700;
+              else if(b.type === 'table') body += b.rowH.reduce((a,c) => a + c, 0)/20 + 4;
+            });
+            const over = spacing + body - avail;
+            if(over > 0 && spacing > 0){ const k = Math.max(0.15, (spacing - over)/spacing); pageBlocks.forEach(b => { if(b.before) b.before = Math.round(b.before*k); if(b.after) b.after = Math.round(b.after*k); }); }
+          }
+          pageBlocks.forEach(b => blocks.push(b));
           if(!pageBlocks.length && i > 0) blocks.push({type:'p', text:'', pageBreakBefore:true, sz:20});
         }
         if(worker){ await worker.terminate(); worker = null; }
         if(!blocks.length){ resultWrap.innerHTML = ''; resultWrap.appendChild(el('div', {class:'note warn'}, ['ไม่พบเนื้อหาในไฟล์นี้ ลองใช้โหมด "รูปหน้า"'])); return; }
         say('กำลังสร้างไฟล์ Word...');
-        const blob = DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), marginL:Math.round(mLpt*20), marginR:Math.round(mRpt*20), marginT:851, marginB:851});
+        const blob = DocxLib.build(blocks, images, {pageW:Math.round(v1.width*20), pageH:Math.round(v1.height*20), marginL:Math.round(mLpt*20), marginR:Math.round(mRpt*20), marginT:Math.round(MARGIN_T_PT*20), marginB:851});
         const info = [`${n} หน้า`, allTables.length ? `ตาราง ${allTables.length}` : null, nImg ? `รูปภาพ ${nImg}` : null, nScan ? `หน้าสแกน ${nScan} (OCR)` : null].filter(Boolean).join(' • ');
         finish(blob, n, info, allTables);
       }catch(err){
